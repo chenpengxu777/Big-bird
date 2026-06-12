@@ -1,0 +1,963 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>东莞围炒卷粿店 — 骑手招聘</title>
+    <style>
+        /* ===== Reset & Base ===== */
+        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+        html { scroll-behavior: smooth; }
+        body {
+            font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
+            color: #333;
+            background: #fff8f0;
+            line-height: 1.7;
+            overflow-x: hidden;
+        }
+        a { text-decoration: none; color: inherit; }
+        img { max-width: 100%; display: block; }
+
+        /* ===== Utilities ===== */
+        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
+        .section { padding: 80px 0; }
+        .section-title {
+            text-align: center;
+            font-size: 2rem;
+            font-weight: 700;
+            color: #c0392b;
+            margin-bottom: 12px;
+        }
+        .section-subtitle {
+            text-align: center;
+            color: #888;
+            font-size: 1rem;
+            margin-bottom: 50px;
+        }
+        .btn {
+            display: inline-block;
+            padding: 14px 40px;
+            border-radius: 50px;
+            font-size: 1.05rem;
+            font-weight: 600;
+            cursor: pointer;
+            border: none;
+            transition: all 0.3s ease;
+            letter-spacing: 1px;
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: #fff;
+            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.35);
+        }
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 28px rgba(231, 76, 60, 0.5);
+        }
+        .btn-outline {
+            background: transparent;
+            color: #c0392b;
+            border: 2px solid #c0392b;
+        }
+        .btn-outline:hover {
+            background: #c0392b;
+            color: #fff;
+        }
+
+        /* ===== Nav ===== */
+        .navbar {
+            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
+            background: rgba(255, 248, 240, 0.92);
+            backdrop-filter: blur(12px);
+            border-bottom: 1px solid rgba(0,0,0,0.06);
+            transition: all 0.3s ease;
+        }
+        .navbar .container {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            height: 66px;
+        }
+        .nav-logo {
+            font-size: 1.35rem;
+            font-weight: 800;
+            color: #c0392b;
+            letter-spacing: 1px;
+        }
+        .nav-logo span { color: #333; font-weight: 400; font-size: 0.85rem; margin-left: 6px; }
+        .nav-links { display: flex; gap: 28px; list-style: none; }
+        .nav-links a {
+            font-size: 0.95rem;
+            color: #555;
+            font-weight: 500;
+            transition: color 0.25s;
+        }
+        .nav-links a:hover { color: #c0392b; }
+        .nav-cta { padding: 8px 22px !important; background: #c0392b; color: #fff !important; border-radius: 50px; font-size: 0.9rem !important; }
+        .nav-cta:hover { background: #a93226 !important; color: #fff !important; }
+        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
+        .hamburger span { display: block; width: 26px; height: 2.5px; background: #333; border-radius: 4px; transition: 0.3s; }
+
+        /* ===== Hero ===== */
+        .hero {
+            min-height: 100vh;
+            display: flex; align-items: center;
+            background: linear-gradient(160deg, #fff8f0 0%, #fdebd0 40%, #fad7a1 100%);
+            position: relative;
+            overflow: hidden;
+            padding-top: 66px;
+        }
+        .hero::before {
+            content: '';
+            position: absolute;
+            top: -120px; right: -160px;
+            width: 500px; height: 500px;
+            background: radial-gradient(circle, rgba(231,76,60,0.10) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .hero::after {
+            content: '';
+            position: absolute;
+            bottom: -80px; left: -100px;
+            width: 400px; height: 400px;
+            background: radial-gradient(circle, rgba(231,76,60,0.08) 0%, transparent 70%);
+            border-radius: 50%;
+        }
+        .hero .container {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+            position: relative;
+            z-index: 1;
+        }
+        .hero-badge {
+            display: inline-block;
+            background: #c0392b;
+            color: #fff;
+            padding: 6px 18px;
+            border-radius: 50px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+        }
+        .hero h1 {
+            font-size: 3.2rem;
+            font-weight: 900;
+            line-height: 1.25;
+            color: #2c1810;
+            margin-bottom: 16px;
+        }
+        .hero h1 em {
+            font-style: normal;
+            color: #c0392b;
+            position: relative;
+        }
+        .hero h1 em::after {
+            content: '';
+            position: absolute;
+            bottom: 4px; left: 0; right: 0;
+            height: 10px;
+            background: rgba(231,76,60,0.18);
+            border-radius: 4px;
+        }
+        .hero-desc {
+            font-size: 1.12rem;
+            color: #666;
+            margin-bottom: 32px;
+            max-width: 440px;
+        }
+        .hero-stats {
+            display: flex;
+            gap: 36px;
+            margin-bottom: 34px;
+        }
+        .hero-stat h3 {
+            font-size: 2rem;
+            color: #c0392b;
+            font-weight: 800;
+        }
+        .hero-stat p { font-size: 0.85rem; color: #888; }
+        .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
+        .hero-visual {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+        .hero-card {
+            background: #fff;
+            border-radius: 24px;
+            padding: 50px 40px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.08);
+            text-align: center;
+            max-width: 380px;
+            width: 100%;
+        }
+        .hero-card .icon-circle {
+            width: 90px; height: 90px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #fdebd0, #fad7a1);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 2.8rem;
+        }
+        .hero-card h3 { font-size: 1.4rem; margin-bottom: 6px; color: #2c1810; }
+        .hero-card .salary {
+            font-size: 2.6rem;
+            font-weight: 900;
+            color: #c0392b;
+            margin: 14px 0 4px;
+        }
+        .hero-card .salary small { font-size: 1rem; font-weight: 400; color: #888; }
+        .hero-card .tags {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            justify-content: center;
+            margin-top: 16px;
+        }
+        .hero-card .tag {
+            background: #fef5e7;
+            color: #b9770e;
+            padding: 5px 14px;
+            border-radius: 50px;
+            font-size: 0.82rem;
+            font-weight: 500;
+        }
+
+        /* ===== About ===== */
+        .about {
+            background: #fff;
+        }
+        .about-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 50px;
+            align-items: center;
+        }
+        .about-image {
+            background: linear-gradient(135deg, #fdebd0, #fad7a1);
+            border-radius: 20px;
+            height: 360px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 6rem;
+            position: relative;
+            overflow: hidden;
+        }
+        .about-image::after {
+            content: '🥢';
+            position: absolute;
+            bottom: -20px; right: -20px;
+            font-size: 10rem;
+            opacity: 0.2;
+        }
+        .about-content h2 {
+            font-size: 2rem;
+            color: #2c1810;
+            margin-bottom: 16px;
+        }
+        .about-content p {
+            color: #666;
+            margin-bottom: 14px;
+            font-size: 1.02rem;
+        }
+        .about-features { list-style: none; margin-top: 20px; }
+        .about-features li {
+            padding: 8px 0;
+            font-size: 1rem;
+            color: #444;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .about-features li::before {
+            content: '✓';
+            color: #c0392b;
+            font-weight: 700;
+            font-size: 1.1rem;
+        }
+
+        /* ===== Job Detail ===== */
+        .jobs { background: #fff8f0; }
+        .job-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 28px;
+        }
+        .job-card {
+            background: #fff;
+            border-radius: 18px;
+            padding: 36px 30px;
+            box-shadow: 0 6px 24px rgba(0,0,0,0.04);
+            transition: all 0.3s ease;
+            border: 1px solid transparent;
+        }
+        .job-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 16px 40px rgba(0,0,0,0.10);
+            border-color: #fad7a1;
+        }
+        .job-card.featured {
+            border: 2px solid #c0392b;
+            position: relative;
+        }
+        .job-card.featured::before {
+            content: '🔥 急聘';
+            position: absolute;
+            top: 14px; right: 20px;
+            background: #c0392b;
+            color: #fff;
+            padding: 3px 14px;
+            border-radius: 50px;
+            font-size: 0.78rem;
+            font-weight: 600;
+        }
+        .job-card .job-icon {
+            width: 56px; height: 56px;
+            border-radius: 14px;
+            background: #fef5e7;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.8rem;
+            margin-bottom: 16px;
+        }
+        .job-card h3 { font-size: 1.25rem; color: #2c1810; margin-bottom: 8px; }
+        .job-card .job-salary {
+            font-size: 1.5rem;
+            font-weight: 800;
+            color: #c0392b;
+            margin-bottom: 14px;
+        }
+        .job-card .job-salary small { font-size: 0.9rem; font-weight: 400; color: #888; }
+        .job-card ul { list-style: none; }
+        .job-card ul li {
+            font-size: 0.93rem;
+            color: #666;
+            padding: 5px 0;
+            padding-left: 20px;
+            position: relative;
+        }
+        .job-card ul li::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 13px;
+            width: 7px; height: 7px;
+            background: #fad7a1;
+            border-radius: 50%;
+        }
+
+        /* ===== Requirements ===== */
+        .requirements { background: #fff; }
+        .req-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 24px;
+        }
+        .req-item {
+            text-align: center;
+            padding: 34px 24px;
+            border-radius: 16px;
+            background: #fff8f0;
+            transition: all 0.3s ease;
+        }
+        .req-item:hover {
+            background: #fef5e7;
+            transform: translateY(-4px);
+        }
+        .req-item .req-icon {
+            font-size: 2.6rem;
+            margin-bottom: 12px;
+        }
+        .req-item h4 { font-size: 1.1rem; color: #2c1810; margin-bottom: 6px; }
+        .req-item p { font-size: 0.93rem; color: #888; }
+
+        /* ===== Benefits ===== */
+        .benefits { background: linear-gradient(160deg, #2c1810, #3e2012); color: #fff; }
+        .benefits .section-title { color: #fad7a1; }
+        .benefits .section-subtitle { color: rgba(255,255,255,0.55); }
+        .benefit-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: 24px;
+        }
+        .benefit-card {
+            background: rgba(255,255,255,0.06);
+            border: 1px solid rgba(255,255,255,0.10);
+            border-radius: 16px;
+            padding: 32px 24px;
+            text-align: center;
+            transition: all 0.3s ease;
+        }
+        .benefit-card:hover {
+            background: rgba(255,255,255,0.12);
+            transform: translateY(-4px);
+        }
+        .benefit-card .b-icon { font-size: 2.4rem; margin-bottom: 12px; }
+        .benefit-card h4 { font-size: 1.1rem; margin-bottom: 6px; color: #fad7a1; }
+        .benefit-card p { font-size: 0.9rem; color: rgba(255,255,255,0.65); }
+
+        /* ===== Form ===== */
+        .apply { background: #fff8f0; }
+        .form-wrapper {
+            max-width: 660px;
+            margin: 0 auto;
+            background: #fff;
+            border-radius: 20px;
+            padding: 48px 40px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.06);
+        }
+        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .form-group { margin-bottom: 22px; }
+        .form-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #2c1810;
+            font-size: 0.95rem;
+        }
+        .form-group input,
+        .form-group select,
+        .form-group textarea {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1.5px solid #e8e0d5;
+            border-radius: 12px;
+            font-size: 0.98rem;
+            font-family: inherit;
+            color: #333;
+            background: #fefdfb;
+            transition: border-color 0.3s;
+            outline: none;
+        }
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            border-color: #c0392b;
+        }
+        .form-group textarea { resize: vertical; min-height: 100px; }
+        .form-group.full { grid-column: 1 / -1; }
+        .form-submit {
+            width: 100%;
+            padding: 15px;
+            font-size: 1.1rem;
+            margin-top: 8px;
+        }
+        .form-note {
+            text-align: center;
+            margin-top: 14px;
+            font-size: 0.85rem;
+            color: #aaa;
+        }
+
+        /* ===== Contact ===== */
+        .contact { background: #fff; padding-bottom: 40px; }
+        .contact-cards {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+            gap: 20px;
+        }
+        .contact-card {
+            text-align: center;
+            padding: 30px 20px;
+            border-radius: 16px;
+            background: #fff8f0;
+            transition: all 0.3s;
+        }
+        .contact-card:hover { background: #fef5e7; }
+        .contact-card .c-icon { font-size: 2rem; margin-bottom: 8px; }
+        .contact-card h4 { font-size: 1rem; color: #2c1810; margin-bottom: 4px; }
+        .contact-card p { font-size: 0.95rem; color: #666; }
+
+        /* ===== Footer ===== */
+        footer {
+            background: #2c1810;
+            color: rgba(255,255,255,0.5);
+            text-align: center;
+            padding: 30px 20px;
+            font-size: 0.88rem;
+        }
+        footer a { color: #fad7a1; }
+        footer a:hover { text-decoration: underline; }
+
+        /* ===== Toast ===== */
+        .toast {
+            position: fixed;
+            top: 30px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-120px);
+            background: #27ae60;
+            color: #fff;
+            padding: 14px 32px;
+            border-radius: 50px;
+            font-weight: 600;
+            font-size: 1rem;
+            z-index: 9999;
+            box-shadow: 0 8px 28px rgba(39,174,96,0.35);
+            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .toast.show { transform: translateX(-50%) translateY(0); }
+
+        /* ===== Mobile Nav (overlay) ===== */
+        .mobile-menu {
+            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(255,248,240,0.98);
+            backdrop-filter: blur(16px);
+            z-index: 999;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 24px;
+            transform: translateY(-100%);
+            transition: transform 0.35s ease;
+        }
+        .mobile-menu.open { transform: translateY(0); }
+        .mobile-menu a { font-size: 1.2rem; font-weight: 600; color: #2c1810; }
+        .mobile-menu .close-btn {
+            position: absolute; top: 20px; right: 24px;
+            background: none; border: none; font-size: 2rem; cursor: pointer; color: #333;
+        }
+
+        /* ===== Responsive ===== */
+        @media (max-width: 768px) {
+            .nav-links { display: none; }
+            .hamburger { display: flex; }
+            .hero .container { grid-template-columns: 1fr; text-align: center; }
+            .hero-desc { margin: 0 auto 24px; }
+            .hero-stats { justify-content: center; }
+            .hero-buttons { justify-content: center; }
+            .hero h1 { font-size: 2.4rem; }
+            .hero-card { max-width: 100%; }
+            .about-grid { grid-template-columns: 1fr; }
+            .about-image { height: 240px; }
+            .form-row { grid-template-columns: 1fr; }
+            .section { padding: 56px 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Toast -->
+    <div class="toast" id="toast">✅ 提交成功！我们会尽快联系您</div>
+
+    <!-- Nav -->
+    <nav class="navbar" id="navbar">
+        <div class="container">
+            <a href="#" class="nav-logo">东莞围炒卷粿<span>陆丰</span></a>
+            <ul class="nav-links">
+                <li><a href="#about">关于我们</a></li>
+                <li><a href="#jobs">招聘岗位</a></li>
+                <li><a href="#benefits">薪资福利</a></li>
+                <li><a href="#apply" class="nav-cta">立即申请</a></li>
+            </ul>
+            <button class="hamburger" id="hamburger" aria-label="菜单">
+                <span></span><span></span><span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Mobile Menu -->
+    <div class="mobile-menu" id="mobileMenu">
+        <button class="close-btn" id="closeMenu">&times;</button>
+        <a href="#about" onclick="closeMenu()">关于我们</a>
+        <a href="#jobs" onclick="closeMenu()">招聘岗位</a>
+        <a href="#benefits" onclick="closeMenu()">薪资福利</a>
+        <a href="#apply" onclick="closeMenu()">立即申请</a>
+    </div>
+
+    <!-- Hero -->
+    <section class="hero" id="home">
+        <div class="container">
+            <div class="hero-text">
+                <span class="hero-badge">🛵 火热招聘中</span>
+                <h1>东莞<em>围炒卷粿</em><br>诚聘骑手</h1>
+                <p class="hero-desc">
+                    地道东莞味，用心做好每一份卷粿。现因订单暴增，急需外卖骑手加入我们，一起把美味送到千家万户！
+                </p>
+                <div class="hero-stats">
+                    <div class="hero-stat">
+                        <h3>5+</h3><p>门店覆盖</p>
+                    </div>
+                    <div class="hero-stat">
+                        <h3>20+</h3><p>在招骑手</p>
+                    </div>
+                    <div class="hero-stat">
+                        <h3>8000+</h3><p>月均收入</p>
+                    </div>
+                </div>
+                <div class="hero-buttons">
+                    <a href="#apply" class="btn btn-primary">🚀 立即报名</a>
+                    <a href="#jobs" class="btn btn-outline">了解更多</a>
+                </div>
+            </div>
+            <div class="hero-visual">
+                <div class="hero-card">
+                    <div class="icon-circle">🛵</div>
+                    <h3>外卖骑手</h3>
+                    <p style="color:#888;">全职 / 兼职均可</p>
+                    <div class="salary">6000-12000<small>元/月</small></div>
+                    <div class="tags">
+                        <span class="tag">💰 多劳多得</span>
+                        <span class="tag">🏠 就近分配</span>
+                        <span class="tag">⏰ 时间灵活</span>
+                        <span class="tag">🎁 新人奖励</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- About -->
+    <section class="about section" id="about">
+        <div class="container">
+            <h2 class="section-title">关于东莞围炒卷粿</h2>
+            <p class="section-subtitle">陆丰本地人气小吃品牌，用心传承地道美味</p>
+            <div class="about-grid">
+                <div class="about-image">🫓</div>
+                <div class="about-content">
+                    <h2>一碗卷粿，一份匠心</h2>
+                    <p>
+                        东莞围炒卷粿创立于东莞围，主打传统手工卷粿及各类特色小吃。
+                        我们坚持选用新鲜食材，纯手工制作，每一份卷粿都承载着陆丰人记忆中的味道。
+                    </p>
+                    <p>
+                        经过多年发展，已在东海开设<strong>5家门店</strong>，覆盖东海、六译、龙潭、城东等区域。
+                        现因外卖订单量持续增长，急需扩充配送团队！
+                    </p>
+                    <p style="margin-top:6px;">
+                        🧑‍🍳 <strong>店长：陈鹏旭</strong> — 多年餐饮行业经验，亲自把控出品品质，真诚对待每一位伙伴。
+                    </p>
+                    <ul class="about-features">
+                        <li>东莞本地知名小吃品牌，订单稳定有保障</li>
+                        <li>自有中央厨房，出餐快、取餐不等待</li>
+                        <li>店长陈鹏旭亲自带团队，氛围融洽，真诚对待每一位员工</li>
+                        <li>新骑手有师傅带，上手无忧</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Jobs -->
+    <section class="jobs section" id="jobs">
+        <div class="container">
+            <h2 class="section-title">招聘岗位</h2>
+            <p class="section-subtitle">多岗位开放，总有一个适合你</p>
+            <div class="job-cards">
+                <!-- Job 1 -->
+                <div class="job-card featured">
+                    <div class="job-icon">🛵</div>
+                    <h3>全职外卖骑手</h3>
+                    <div class="job-salary">7000-12000<small>元/月</small></div>
+                    <ul>
+                        <li>负责门店3公里范围内外卖配送</li>
+                        <li>每天工作8-10小时，月休4天</li>
+                        <li>底薪 + 按单提成 + 全勤奖</li>
+                        <li>公司提供电动车（可自带补贴）</li>
+                        <li>有社保 + 意外险保障</li>
+                    </ul>
+                </div>
+                <!-- Job 2 -->
+                <div class="job-card">
+                    <div class="job-icon">⏰</div>
+                    <h3>兼职骑手</h3>
+                    <div class="job-salary">3000-6000<small>元/月</small></div>
+                    <ul>
+                        <li>时间灵活，可自由选择班次</li>
+                        <li>按单结算，多跑多得</li>
+                        <li>适合学生、兼职人群</li>
+                        <li>最少每天工作4小时</li>
+                        <li>公司提供意外险</li>
+                    </ul>
+                </div>
+                <!-- Job 3 -->
+                <div class="job-card">
+                    <div class="job-icon">🌙</div>
+                    <h3>夜班骑手</h3>
+                    <div class="job-salary">8000-15000<small>元/月</small></div>
+                    <ul>
+                        <li>负责晚间时段配送（18:00-02:00）</li>
+                        <li>夜班补贴 + 更高单均提成</li>
+                        <li>订单集中、收入更有保障</li>
+                        <li>全职待遇，月休4天</li>
+                        <li>夜班安全保障措施到位</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Requirements -->
+    <section class="requirements section" id="requirements">
+        <div class="container">
+            <h2 class="section-title">应聘要求</h2>
+            <p class="section-subtitle">门槛不高，只要你肯干</p>
+            <div class="req-grid">
+                <div class="req-item">
+                    <div class="req-icon">🎂</div>
+                    <h4>年龄要求</h4>
+                    <p>18-50周岁，身体健康</p>
+                </div>
+                <div class="req-item">
+                    <div class="req-icon">🪪</div>
+                    <h4>证件要求</h4>
+                    <p>持有有效身份证，会骑电动车</p>
+                </div>
+                <div class="req-item">
+                    <div class="req-icon">📱</div>
+                    <h4>手机导航</h4>
+                    <p>会使用智能手机和导航软件</p>
+                </div>
+                <div class="req-item">
+                    <div class="req-icon">😊</div>
+                    <h4>服务意识</h4>
+                    <p>有责任心，服务态度好</p>
+                </div>
+                <div class="req-item">
+                    <div class="req-icon">🗺️</div>
+                    <h4>熟悉路况</h4>
+                    <p>熟悉东莞本地路况者优先</p>
+                </div>
+                <div class="req-item">
+                    <div class="req-icon">📋</div>
+                    <h4>经验不限</h4>
+                    <p>无经验可培训，有配送经验更佳</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Benefits -->
+    <section class="benefits section" id="benefits">
+        <div class="container">
+            <h2 class="section-title">薪资福利</h2>
+            <p class="section-subtitle">你的付出，我们用心回报</p>
+            <div class="benefit-grid">
+                <div class="benefit-card">
+                    <div class="b-icon">💰</div>
+                    <h4>高额收入</h4>
+                    <p>底薪+提成+奖金，综合月薪6000-15000元，上不封顶</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="b-icon">🎯</div>
+                    <h4>新人奖励</h4>
+                    <p>入职首月额外新人补贴500元，跑满单量再加300元</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="b-icon">🛡️</div>
+                    <h4>保险保障</h4>
+                    <p>全员购买意外保险，全职骑手缴纳社保，安心跑单</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="b-icon">🏠</div>
+                    <h4>就近分配</h4>
+                    <p>根据居住地址就近安排门店，通勤无忧</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="b-icon">🔋</div>
+                    <h4>车辆支持</h4>
+                    <p>公司提供电动车及充电，也可自带车辆领取补贴</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="b-icon">📈</div>
+                    <h4>晋升空间</h4>
+                    <p>优秀骑手可晋升为配送队长、门店管理，发展路径清晰</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="b-icon">🍜</div>
+                    <h4>员工餐补</h4>
+                    <p>工作日提供餐补或免费员工餐，吃饱再出发</p>
+                </div>
+                <div class="benefit-card">
+                    <div class="b-icon">🎉</div>
+                    <h4>节日福利</h4>
+                    <p>节假日红包、团建聚餐、年终奖励，像家人一样</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Apply Form -->
+    <section class="apply section" id="apply">
+        <div class="container">
+            <h2 class="section-title">在线报名</h2>
+            <p class="section-subtitle">填写信息，我们会在24小时内联系您</p>
+            <div class="form-wrapper">
+                <form id="applyForm">
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="name">姓名 *</label>
+                            <input type="text" id="name" placeholder="请输入您的姓名" required>
+                        </div>
+                        <div class="form-group">
+                            <label for="phone">手机号 *</label>
+                            <input type="tel" id="phone" placeholder="请输入手机号码" required>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="age">年龄</label>
+                            <input type="number" id="age" placeholder="请输入年龄" min="18" max="60">
+                        </div>
+                        <div class="form-group">
+                            <label for="jobType">应聘岗位 *</label>
+                            <select id="jobType" required>
+                                <option value="">请选择岗位</option>
+                                <option value="fulltime">全职外卖骑手</option>
+                                <option value="parttime">兼职骑手</option>
+                                <option value="night">夜班骑手</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-row">
+                        <div class="form-group">
+                            <label for="area">希望工作区域</label>
+                            <select id="area">
+                                <option value="">请选择区域</option>
+                                <option value="tanxi">谭西</option>
+                                <option value="chengdong">城东</option>
+                                <option value="mingchenghuayuan">名晟花园</option>
+                                <option value="majie">马街</option>
+                                <option value="renminlu">人民路</option>
+                                <option value="other">其他</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label for="experience">配送经验</label>
+                            <select id="experience">
+                                <option value="">请选择</option>
+                                <option value="none">无经验</option>
+                                <option value="some">1年以下</option>
+                                <option value="one">1-3年</option>
+                                <option value="many">3年以上</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="form-group full">
+                        <label for="remark">备注</label>
+                        <textarea id="remark" placeholder="如有其他想说的，可以写在这里（选填）"></textarea>
+                    </div>
+                    <button type="submit" class="btn btn-primary form-submit">📩 提交申请</button>
+                    <p class="form-note">* 提交即表示同意我们将您的信息用于招聘联系，我们承诺保护您的隐私</p>
+                </form>
+            </div>
+        </div>
+    </section>
+
+    <!-- Contact -->
+    <section class="contact section" id="contact">
+        <div class="container">
+            <h2 class="section-title">联系我们</h2>
+            <p class="section-subtitle">多个渠道，随时沟通</p>
+            <div class="contact-cards">
+                <div class="contact-card">
+                    <div class="c-icon">🧑‍🍳</div>
+                    <h4>店长：陈鹏旭</h4>
+                    <p>13437544521</p>
+                </div>
+                <div class="contact-card">
+                    <div class="c-icon">📞</div>
+                    <h4>招聘热线</h4>
+                    <p>113437544521</p>
+                </div>
+                <div class="contact-card">
+                    <div class="c-icon">💬</div>
+                    <h4>微信咨询</h4>
+                    <p>13437544521</p>
+                </div>
+                <div class="contact-card">
+                    <div class="c-icon">📍</div>
+                    <h4>总部地址</h4>
+                    <p>陆丰市东海街道环城路98号</p>
+                </div>
+                <div class="contact-card">
+                    <div class="c-icon">🕘</div>
+                    <h4>咨询时间</h4>
+                    <p>每天 9:00 - 21:00</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer>
+        <div class="container">
+            <p>&copy; 2026 东莞围炒卷粿店 — 骑手招聘官网 | <a href="#">回到顶部</a></p>
+            <p style="margin-top:4px;">用心做好每一份卷粿，诚邀每一位伙伴加入 🤝</p>
+        </div>
+    </footer>
+
+    <script>
+        // Mobile menu
+        const hamburger = document.getElementById('hamburger');
+        const mobileMenu = document.getElementById('mobileMenu');
+        const closeMenuBtn = document.getElementById('closeMenu');
+
+        hamburger.addEventListener('click', () => mobileMenu.classList.add('open'));
+        function closeMenu() { mobileMenu.classList.remove('open'); }
+        closeMenuBtn.addEventListener('click', closeMenu);
+
+        // Smooth scroll for mobile menu links
+        document.querySelectorAll('.mobile-menu a').forEach(link => {
+            link.addEventListener('click', closeMenu);
+        });
+
+        // Navbar shadow on scroll
+        window.addEventListener('scroll', () => {
+            const nav = document.getElementById('navbar');
+            nav.style.boxShadow = window.scrollY > 10
+                ? '0 2px 20px rgba(0,0,0,0.08)'
+                : 'none';
+        });
+
+        // Form submission
+        const form = document.getElementById('applyForm');
+        const toast = document.getElementById('toast');
+
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+
+            const name = document.getElementById('name').value.trim();
+            const phone = document.getElementById('phone').value.trim();
+            const jobType = document.getElementById('jobType').value;
+
+            if (!name || !phone || !jobType) {
+                alert('请填写必填项（姓名、手机号、应聘岗位）');
+                return;
+            }
+
+            if (!/^1[3-9]\d{9}$/.test(phone)) {
+                alert('请输入正确的手机号码');
+                return;
+            }
+
+            // Show toast
+            toast.classList.add('show');
+            setTimeout(() => toast.classList.remove('show'), 3500);
+
+            // Reset form
+            form.reset();
+
+            // Log (in production, send to server)
+            console.log('申请提交:', { name, phone, jobType });
+        });
+
+        // Smooth scroll for all anchor links
+        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
+            anchor.addEventListener('click', function(e) {
+                e.preventDefault();
+                const target = document.querySelector(this.getAttribute('href'));
+                if (target) {
+                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+                }
+            });
+        });
+    </script>
+</body>
+</html>
