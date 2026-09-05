@@ -1,963 +1,1162 @@
 <!DOCTYPE html>
 <html lang="zh-CN">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>东莞围炒卷粿店 — 骑手招聘</title>
-    <style>
-        /* ===== Reset & Base ===== */
-        *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
-        html { scroll-behavior: smooth; }
-        body {
-            font-family: "PingFang SC", "Microsoft YaHei", "Helvetica Neue", Arial, sans-serif;
-            color: #333;
-            background: #fff8f0;
-            line-height: 1.7;
-            overflow-x: hidden;
-        }
-        a { text-decoration: none; color: inherit; }
-        img { max-width: 100%; display: block; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>嵌入式学习笔记 · GPIO 与通信协议</title>
+<style>
+  :root{
+    --bg:#f6f7f9; --bg2:#ffffff; --text:#1f2328; --muted:#6a737d;
+    --line:#e1e4e8; --accent:#0b6bcb; --accent-soft:#e8f1fb;
+    --code-bg:#0d1117; --code-text:#c9d1d9;
+    --tag-gpio:#0b6bcb; --tag-comm:#b45309; --tag-timer:#0f766e; --tag-adc:#7c3aed;
+    --tag-dma:#be185d; --tag-sys:#166534; --warn-bg:#fff8e6; --warn-line:#f0c36d;
+    --ok-bg:#e8f5e9; --ok-line:#81c784;
+    --shadow:0 1px 3px rgba(0,0,0,.06), 0 4px 16px rgba(0,0,0,.05);
+  }
+  html[data-theme="dark"]{
+    --bg:#0d1117; --bg2:#161b22; --text:#e6edf3; --muted:#8b949e;
+    --line:#30363d; --accent:#58a6ff; --accent-soft:#0d2a45;
+    --code-bg:#010409; --code-text:#c9d1d9;
+    --warn-bg:#1c1a10; --warn-line:#6e5a1a;
+    --ok-bg:#0f2a1a; --ok-line:#1e6b34;
+    --shadow:0 1px 3px rgba(0,0,0,.4), 0 4px 16px rgba(0,0,0,.4);
+  }
+  *{box-sizing:border-box;}
+  html{scroll-behavior:smooth;}
+  body{
+    margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+    background:var(--bg); color:var(--text); line-height:1.7; font-size:15px;
+  }
+  a{color:var(--accent); text-decoration:none;}
+  a:hover{text-decoration:underline;}
 
-        /* ===== Utilities ===== */
-        .container { max-width: 1100px; margin: 0 auto; padding: 0 20px; }
-        .section { padding: 80px 0; }
-        .section-title {
-            text-align: center;
-            font-size: 2rem;
-            font-weight: 700;
-            color: #c0392b;
-            margin-bottom: 12px;
-        }
-        .section-subtitle {
-            text-align: center;
-            color: #888;
-            font-size: 1rem;
-            margin-bottom: 50px;
-        }
-        .btn {
-            display: inline-block;
-            padding: 14px 40px;
-            border-radius: 50px;
-            font-size: 1.05rem;
-            font-weight: 600;
-            cursor: pointer;
-            border: none;
-            transition: all 0.3s ease;
-            letter-spacing: 1px;
-        }
-        .btn-primary {
-            background: linear-gradient(135deg, #e74c3c, #c0392b);
-            color: #fff;
-            box-shadow: 0 6px 20px rgba(231, 76, 60, 0.35);
-        }
-        .btn-primary:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 10px 28px rgba(231, 76, 60, 0.5);
-        }
-        .btn-outline {
-            background: transparent;
-            color: #c0392b;
-            border: 2px solid #c0392b;
-        }
-        .btn-outline:hover {
-            background: #c0392b;
-            color: #fff;
-        }
+  header{
+    position:sticky; top:0; z-index:50; height:56px; display:flex; align-items:center;
+    gap:14px; padding:0 20px; background:var(--bg2); border-bottom:1px solid var(--line);
+    backdrop-filter:blur(6px);
+  }
+  header .logo{font-weight:700; font-size:16px; white-space:nowrap;}
+  header .logo span{color:var(--accent);}
+  header .search{flex:1; max-width:420px; margin-left:auto; position:relative;}
+  header .search input{
+    width:100%; padding:8px 14px; border:1px solid var(--line); border-radius:8px;
+    background:var(--bg); color:var(--text); font-size:14px; outline:none;
+  }
+  header .search input:focus{border-color:var(--accent); box-shadow:0 0 0 3px var(--accent-soft);}
+  header .btn{
+    border:1px solid var(--line); background:var(--bg2); color:var(--text);
+    padding:7px 12px; border-radius:8px; cursor:pointer; font-size:13px; white-space:nowrap;
+  }
+  header .btn:hover{border-color:var(--accent); color:var(--accent);}
+  #menuBtn{display:none;}
 
-        /* ===== Nav ===== */
-        .navbar {
-            position: fixed; top: 0; left: 0; right: 0; z-index: 1000;
-            background: rgba(255, 248, 240, 0.92);
-            backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(0,0,0,0.06);
-            transition: all 0.3s ease;
-        }
-        .navbar .container {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            height: 66px;
-        }
-        .nav-logo {
-            font-size: 1.35rem;
-            font-weight: 800;
-            color: #c0392b;
-            letter-spacing: 1px;
-        }
-        .nav-logo span { color: #333; font-weight: 400; font-size: 0.85rem; margin-left: 6px; }
-        .nav-links { display: flex; gap: 28px; list-style: none; }
-        .nav-links a {
-            font-size: 0.95rem;
-            color: #555;
-            font-weight: 500;
-            transition: color 0.25s;
-        }
-        .nav-links a:hover { color: #c0392b; }
-        .nav-cta { padding: 8px 22px !important; background: #c0392b; color: #fff !important; border-radius: 50px; font-size: 0.9rem !important; }
-        .nav-cta:hover { background: #a93226 !important; color: #fff !important; }
-        .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; background: none; border: none; padding: 4px; }
-        .hamburger span { display: block; width: 26px; height: 2.5px; background: #333; border-radius: 4px; transition: 0.3s; }
+  .layout{display:flex; max-width:1360px; margin:0 auto;}
+  nav{
+    position:sticky; top:56px; align-self:flex-start; width:250px; min-width:250px;
+    height:calc(100vh - 56px); overflow-y:auto; padding:18px 12px; border-right:1px solid var(--line);
+  }
+  nav a.nav-head{
+    display:block; font-weight:600; color:var(--text); padding:6px 10px; border-radius:6px; font-size:14px;
+  }
+  nav a.nav-head:hover{background:var(--accent-soft); text-decoration:none;}
+  nav a.nav-sub{
+    display:block; color:var(--muted); padding:4px 10px 4px 24px; border-radius:6px; font-size:13px;
+    border-left:2px solid transparent;
+  }
+  nav a.nav-sub:hover{color:var(--accent); text-decoration:none;}
+  nav a.nav-sub.active{color:var(--accent); border-left-color:var(--accent); background:var(--accent-soft);}
+  nav .group{margin-bottom:8px;}
 
-        /* ===== Hero ===== */
-        .hero {
-            min-height: 100vh;
-            display: flex; align-items: center;
-            background: linear-gradient(160deg, #fff8f0 0%, #fdebd0 40%, #fad7a1 100%);
-            position: relative;
-            overflow: hidden;
-            padding-top: 66px;
-        }
-        .hero::before {
-            content: '';
-            position: absolute;
-            top: -120px; right: -160px;
-            width: 500px; height: 500px;
-            background: radial-gradient(circle, rgba(231,76,60,0.10) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-        .hero::after {
-            content: '';
-            position: absolute;
-            bottom: -80px; left: -100px;
-            width: 400px; height: 400px;
-            background: radial-gradient(circle, rgba(231,76,60,0.08) 0%, transparent 70%);
-            border-radius: 50%;
-        }
-        .hero .container {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
-            align-items: center;
-            position: relative;
-            z-index: 1;
-        }
-        .hero-badge {
-            display: inline-block;
-            background: #c0392b;
-            color: #fff;
-            padding: 6px 18px;
-            border-radius: 50px;
-            font-size: 0.85rem;
-            font-weight: 600;
-            letter-spacing: 2px;
-            margin-bottom: 20px;
-        }
-        .hero h1 {
-            font-size: 3.2rem;
-            font-weight: 900;
-            line-height: 1.25;
-            color: #2c1810;
-            margin-bottom: 16px;
-        }
-        .hero h1 em {
-            font-style: normal;
-            color: #c0392b;
-            position: relative;
-        }
-        .hero h1 em::after {
-            content: '';
-            position: absolute;
-            bottom: 4px; left: 0; right: 0;
-            height: 10px;
-            background: rgba(231,76,60,0.18);
-            border-radius: 4px;
-        }
-        .hero-desc {
-            font-size: 1.12rem;
-            color: #666;
-            margin-bottom: 32px;
-            max-width: 440px;
-        }
-        .hero-stats {
-            display: flex;
-            gap: 36px;
-            margin-bottom: 34px;
-        }
-        .hero-stat h3 {
-            font-size: 2rem;
-            color: #c0392b;
-            font-weight: 800;
-        }
-        .hero-stat p { font-size: 0.85rem; color: #888; }
-        .hero-buttons { display: flex; gap: 16px; flex-wrap: wrap; }
-        .hero-visual {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-        }
-        .hero-card {
-            background: #fff;
-            border-radius: 24px;
-            padding: 50px 40px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.08);
-            text-align: center;
-            max-width: 380px;
-            width: 100%;
-        }
-        .hero-card .icon-circle {
-            width: 90px; height: 90px;
-            border-radius: 50%;
-            background: linear-gradient(135deg, #fdebd0, #fad7a1);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 20px;
-            font-size: 2.8rem;
-        }
-        .hero-card h3 { font-size: 1.4rem; margin-bottom: 6px; color: #2c1810; }
-        .hero-card .salary {
-            font-size: 2.6rem;
-            font-weight: 900;
-            color: #c0392b;
-            margin: 14px 0 4px;
-        }
-        .hero-card .salary small { font-size: 1rem; font-weight: 400; color: #888; }
-        .hero-card .tags {
-            display: flex;
-            flex-wrap: wrap;
-            gap: 8px;
-            justify-content: center;
-            margin-top: 16px;
-        }
-        .hero-card .tag {
-            background: #fef5e7;
-            color: #b9770e;
-            padding: 5px 14px;
-            border-radius: 50px;
-            font-size: 0.82rem;
-            font-weight: 500;
-        }
+  main{flex:1; min-width:0; padding:26px 36px 80px;}
+  @media(max-width:900px){
+    #menuBtn{display:inline-block;}
+    nav{position:fixed; left:-270px; transition:left .25s; background:var(--bg2); z-index:40; top:56px;}
+    nav.open{left:0;}
+    main{padding:20px 16px 80px;}
+  }
 
-        /* ===== About ===== */
-        .about {
-            background: #fff;
-        }
-        .about-grid {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 50px;
-            align-items: center;
-        }
-        .about-image {
-            background: linear-gradient(135deg, #fdebd0, #fad7a1);
-            border-radius: 20px;
-            height: 360px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 6rem;
-            position: relative;
-            overflow: hidden;
-        }
-        .about-image::after {
-            content: '🥢';
-            position: absolute;
-            bottom: -20px; right: -20px;
-            font-size: 10rem;
-            opacity: 0.2;
-        }
-        .about-content h2 {
-            font-size: 2rem;
-            color: #2c1810;
-            margin-bottom: 16px;
-        }
-        .about-content p {
-            color: #666;
-            margin-bottom: 14px;
-            font-size: 1.02rem;
-        }
-        .about-features { list-style: none; margin-top: 20px; }
-        .about-features li {
-            padding: 8px 0;
-            font-size: 1rem;
-            color: #444;
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .about-features li::before {
-            content: '✓';
-            color: #c0392b;
-            font-weight: 700;
-            font-size: 1.1rem;
-        }
+  section{margin-bottom:48px; scroll-margin-top:72px;}
+  .tag{
+    display:inline-block; font-size:11px; font-weight:600; color:#fff; padding:2px 8px;
+    border-radius:999px; vertical-align:middle; margin-left:6px; letter-spacing:.5px;
+  }
+  .tag.gpio{background:var(--tag-gpio);} .tag.comm{background:var(--tag-comm);}
+  .tag.timer{background:var(--tag-timer);} .tag.adc{background:var(--tag-adc);}
+  .tag.dma{background:var(--tag-dma);} .tag.sys{background:var(--tag-sys);}
+  h1{font-size:30px; margin:0 0 8px; line-height:1.3;}
+  h2{font-size:22px; margin:0 0 12px; padding-bottom:8px; border-bottom:2px solid var(--line);}
+  h3{font-size:17px; margin:26px 0 8px;}
+  h4{font-size:15px; margin:18px 0 6px;}
+  p{margin:8px 0;}
+  ul,ol{margin:8px 0; padding-left:22px;}
+  li{margin:3px 0;}
+  .lead{color:var(--muted); font-size:15px; margin-bottom:22px;}
 
-        /* ===== Job Detail ===== */
-        .jobs { background: #fff8f0; }
-        .job-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-            gap: 28px;
-        }
-        .job-card {
-            background: #fff;
-            border-radius: 18px;
-            padding: 36px 30px;
-            box-shadow: 0 6px 24px rgba(0,0,0,0.04);
-            transition: all 0.3s ease;
-            border: 1px solid transparent;
-        }
-        .job-card:hover {
-            transform: translateY(-6px);
-            box-shadow: 0 16px 40px rgba(0,0,0,0.10);
-            border-color: #fad7a1;
-        }
-        .job-card.featured {
-            border: 2px solid #c0392b;
-            position: relative;
-        }
-        .job-card.featured::before {
-            content: '🔥 急聘';
-            position: absolute;
-            top: 14px; right: 20px;
-            background: #c0392b;
-            color: #fff;
-            padding: 3px 14px;
-            border-radius: 50px;
-            font-size: 0.78rem;
-            font-weight: 600;
-        }
-        .job-card .job-icon {
-            width: 56px; height: 56px;
-            border-radius: 14px;
-            background: #fef5e7;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 1.8rem;
-            margin-bottom: 16px;
-        }
-        .job-card h3 { font-size: 1.25rem; color: #2c1810; margin-bottom: 8px; }
-        .job-card .job-salary {
-            font-size: 1.5rem;
-            font-weight: 800;
-            color: #c0392b;
-            margin-bottom: 14px;
-        }
-        .job-card .job-salary small { font-size: 0.9rem; font-weight: 400; color: #888; }
-        .job-card ul { list-style: none; }
-        .job-card ul li {
-            font-size: 0.93rem;
-            color: #666;
-            padding: 5px 0;
-            padding-left: 20px;
-            position: relative;
-        }
-        .job-card ul li::before {
-            content: '';
-            position: absolute;
-            left: 0; top: 13px;
-            width: 7px; height: 7px;
-            background: #fad7a1;
-            border-radius: 50%;
-        }
+  .card{
+    background:var(--bg2); border:1px solid var(--line); border-radius:12px;
+    padding:18px 20px; margin:14px 0; box-shadow:var(--shadow);
+  }
+  .grid{display:grid; gap:14px; margin:14px 0;}
+  .grid.c2{grid-template-columns:repeat(auto-fit,minmax(300px,1fr));}
+  .grid.c3{grid-template-columns:repeat(auto-fit,minmax(220px,1fr));}
 
-        /* ===== Requirements ===== */
-        .requirements { background: #fff; }
-        .req-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 24px;
-        }
-        .req-item {
-            text-align: center;
-            padding: 34px 24px;
-            border-radius: 16px;
-            background: #fff8f0;
-            transition: all 0.3s ease;
-        }
-        .req-item:hover {
-            background: #fef5e7;
-            transform: translateY(-4px);
-        }
-        .req-item .req-icon {
-            font-size: 2.6rem;
-            margin-bottom: 12px;
-        }
-        .req-item h4 { font-size: 1.1rem; color: #2c1810; margin-bottom: 6px; }
-        .req-item p { font-size: 0.93rem; color: #888; }
+  .tbl-wrap{overflow-x:auto; margin:14px 0; border:1px solid var(--line); border-radius:10px;}
+  table{border-collapse:collapse; width:100%; font-size:14px; min-width:520px;}
+  th,td{padding:9px 12px; text-align:left; border-bottom:1px solid var(--line); vertical-align:top;}
+  th{background:var(--accent-soft); font-weight:600; white-space:nowrap;}
+  tr:last-child td{border-bottom:none;}
+  tr:hover td{background:var(--accent-soft);}
+  td .k{font-weight:600; color:var(--accent);}
 
-        /* ===== Benefits ===== */
-        .benefits { background: linear-gradient(160deg, #2c1810, #3e2012); color: #fff; }
-        .benefits .section-title { color: #fad7a1; }
-        .benefits .section-subtitle { color: rgba(255,255,255,0.55); }
-        .benefit-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
-            gap: 24px;
-        }
-        .benefit-card {
-            background: rgba(255,255,255,0.06);
-            border: 1px solid rgba(255,255,255,0.10);
-            border-radius: 16px;
-            padding: 32px 24px;
-            text-align: center;
-            transition: all 0.3s ease;
-        }
-        .benefit-card:hover {
-            background: rgba(255,255,255,0.12);
-            transform: translateY(-4px);
-        }
-        .benefit-card .b-icon { font-size: 2.4rem; margin-bottom: 12px; }
-        .benefit-card h4 { font-size: 1.1rem; margin-bottom: 6px; color: #fad7a1; }
-        .benefit-card p { font-size: 0.9rem; color: rgba(255,255,255,0.65); }
+  .note,.warn,.tip{border-radius:8px; padding:12px 14px; margin:14px 0; font-size:14px;}
+  .note{background:var(--accent-soft); border-left:4px solid var(--accent);}
+  .warn{background:var(--warn-bg); border-left:4px solid var(--warn-line);}
+  .tip{background:var(--ok-bg); border-left:4px solid var(--ok-line);}
+  .note b,.warn b,.tip b{display:block; margin-bottom:2px;}
 
-        /* ===== Form ===== */
-        .apply { background: #fff8f0; }
-        .form-wrapper {
-            max-width: 660px;
-            margin: 0 auto;
-            background: #fff;
-            border-radius: 20px;
-            padding: 48px 40px;
-            box-shadow: 0 10px 40px rgba(0,0,0,0.06);
-        }
-        .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .form-group { margin-bottom: 22px; }
-        .form-group label {
-            display: block;
-            font-weight: 600;
-            margin-bottom: 6px;
-            color: #2c1810;
-            font-size: 0.95rem;
-        }
-        .form-group input,
-        .form-group select,
-        .form-group textarea {
-            width: 100%;
-            padding: 12px 16px;
-            border: 1.5px solid #e8e0d5;
-            border-radius: 12px;
-            font-size: 0.98rem;
-            font-family: inherit;
-            color: #333;
-            background: #fefdfb;
-            transition: border-color 0.3s;
-            outline: none;
-        }
-        .form-group input:focus,
-        .form-group select:focus,
-        .form-group textarea:focus {
-            border-color: #c0392b;
-        }
-        .form-group textarea { resize: vertical; min-height: 100px; }
-        .form-group.full { grid-column: 1 / -1; }
-        .form-submit {
-            width: 100%;
-            padding: 15px;
-            font-size: 1.1rem;
-            margin-top: 8px;
-        }
-        .form-note {
-            text-align: center;
-            margin-top: 14px;
-            font-size: 0.85rem;
-            color: #aaa;
-        }
+  .code{
+    position:relative; background:var(--code-bg); color:var(--code-text); border-radius:10px;
+    padding:14px 16px; margin:14px 0; overflow-x:auto; font-size:13px; line-height:1.6;
+    font-family:"JetBrains Mono","Fira Code",Consolas,"Courier New",monospace; white-space:pre;
+  }
+  .code .copy{
+    position:absolute; top:8px; right:8px; background:rgba(255,255,255,.08); color:#c9d1d9;
+    border:1px solid rgba(255,255,255,.15); border-radius:6px; padding:3px 10px; font-size:12px;
+    cursor:pointer; font-family:inherit;
+  }
+  .code .copy:hover{background:rgba(255,255,255,.16);}
+  .code .lang{position:absolute; top:8px; right:76px; color:#8b949e; font-size:11px;}
+  .c-cmt{color:#8b949e;} .c-kw{color:#ff7b72;} .c-fn{color:#d2a8ff;} .c-str{color:#a5d6ff;}
+  .c-num{color:#79c0ff;} .c-macro{color:#7ee787;}
 
-        /* ===== Contact ===== */
-        .contact { background: #fff; padding-bottom: 40px; }
-        .contact-cards {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-            gap: 20px;
-        }
-        .contact-card {
-            text-align: center;
-            padding: 30px 20px;
-            border-radius: 16px;
-            background: #fff8f0;
-            transition: all 0.3s;
-        }
-        .contact-card:hover { background: #fef5e7; }
-        .contact-card .c-icon { font-size: 2rem; margin-bottom: 8px; }
-        .contact-card h4 { font-size: 1rem; color: #2c1810; margin-bottom: 4px; }
-        .contact-card p { font-size: 0.95rem; color: #666; }
+  .fig{background:var(--bg2); border:1px solid var(--line); border-radius:10px; padding:16px; margin:14px 0;}
+  .fig svg{width:100%; height:auto; display:block;}
+  .fig .cap{font-size:13px; color:var(--muted); text-align:center; margin-top:8px;}
 
-        /* ===== Footer ===== */
-        footer {
-            background: #2c1810;
-            color: rgba(255,255,255,0.5);
-            text-align: center;
-            padding: 30px 20px;
-            font-size: 0.88rem;
-        }
-        footer a { color: #fad7a1; }
-        footer a:hover { text-decoration: underline; }
+  .kv{display:grid; grid-template-columns:150px 1fr; gap:6px 14px; font-size:14px; margin:10px 0;}
+  .kv .kk{color:var(--muted); font-weight:600;}
+  @media(max-width:600px){ .kv{grid-template-columns:1fr;} }
 
-        /* ===== Toast ===== */
-        .toast {
-            position: fixed;
-            top: 30px;
-            left: 50%;
-            transform: translateX(-50%) translateY(-120px);
-            background: #27ae60;
-            color: #fff;
-            padding: 14px 32px;
-            border-radius: 50px;
-            font-weight: 600;
-            font-size: 1rem;
-            z-index: 9999;
-            box-shadow: 0 8px 28px rgba(39,174,96,0.35);
-            transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        .toast.show { transform: translateX(-50%) translateY(0); }
-
-        /* ===== Mobile Nav (overlay) ===== */
-        .mobile-menu {
-            position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(255,248,240,0.98);
-            backdrop-filter: blur(16px);
-            z-index: 999;
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            justify-content: center;
-            gap: 24px;
-            transform: translateY(-100%);
-            transition: transform 0.35s ease;
-        }
-        .mobile-menu.open { transform: translateY(0); }
-        .mobile-menu a { font-size: 1.2rem; font-weight: 600; color: #2c1810; }
-        .mobile-menu .close-btn {
-            position: absolute; top: 20px; right: 24px;
-            background: none; border: none; font-size: 2rem; cursor: pointer; color: #333;
-        }
-
-        /* ===== Responsive ===== */
-        @media (max-width: 768px) {
-            .nav-links { display: none; }
-            .hamburger { display: flex; }
-            .hero .container { grid-template-columns: 1fr; text-align: center; }
-            .hero-desc { margin: 0 auto 24px; }
-            .hero-stats { justify-content: center; }
-            .hero-buttons { justify-content: center; }
-            .hero h1 { font-size: 2.4rem; }
-            .hero-card { max-width: 100%; }
-            .about-grid { grid-template-columns: 1fr; }
-            .about-image { height: 240px; }
-            .form-row { grid-template-columns: 1fr; }
-            .section { padding: 56px 0; }
-        }
-    </style>
+  mark{background:#ffe58f; color:#1f2328; padding:0 2px; border-radius:3px;}
+  .hidden{display:none !important;}
+  .backtop{position:fixed; right:22px; bottom:22px; width:42px; height:42px; border-radius:50%;
+    background:var(--accent); color:#fff; border:none; cursor:pointer; font-size:18px; box-shadow:var(--shadow); opacity:.85;}
+  .backtop:hover{opacity:1;}
+</style>
 </head>
 <body>
+<header>
+  <button class="btn" id="menuBtn">☰ 目录</button>
+  <div class="logo">嵌入式<span>学习笔记</span></div>
+  <div class="search">
+    <input type="search" id="search" placeholder="搜索：GPIO / I2C / PWM / 波特率 / 看门狗…">
+  </div>
+  <button class="btn" id="themeBtn" title="切换主题">🌙</button>
+</header>
 
-    <!-- Toast -->
-    <div class="toast" id="toast">✅ 提交成功！我们会尽快联系您</div>
-
-    <!-- Nav -->
-    <nav class="navbar" id="navbar">
-        <div class="container">
-            <a href="#" class="nav-logo">东莞围炒卷粿<span>陆丰</span></a>
-            <ul class="nav-links">
-                <li><a href="#about">关于我们</a></li>
-                <li><a href="#jobs">招聘岗位</a></li>
-                <li><a href="#benefits">薪资福利</a></li>
-                <li><a href="#apply" class="nav-cta">立即申请</a></li>
-            </ul>
-            <button class="hamburger" id="hamburger" aria-label="菜单">
-                <span></span><span></span><span></span>
-            </button>
-        </div>
-    </nav>
-
-    <!-- Mobile Menu -->
-    <div class="mobile-menu" id="mobileMenu">
-        <button class="close-btn" id="closeMenu">&times;</button>
-        <a href="#about" onclick="closeMenu()">关于我们</a>
-        <a href="#jobs" onclick="closeMenu()">招聘岗位</a>
-        <a href="#benefits" onclick="closeMenu()">薪资福利</a>
-        <a href="#apply" onclick="closeMenu()">立即申请</a>
+<div class="layout">
+  <nav id="nav">
+    <div class="group"><a class="nav-head" href="#gpio">一、GPIO 工作模式 <span class="tag gpio">GPIO</span></a>
+      <a class="nav-sub" href="#gpio-struct">内部结构</a>
+      <a class="nav-sub" href="#gpio-8modes">8 种模式</a>
+      <a class="nav-sub" href="#gpio-pushpull">推挽 vs 开漏</a>
+      <a class="nav-sub" href="#gpio-pull">上下拉电阻</a>
+      <a class="nav-sub" href="#gpio-schmitt">施密特触发器</a>
+      <a class="nav-sub" href="#gpio-speed">速度与电气参数</a>
+      <a class="nav-sub" href="#gpio-af">复用功能 AF</a>
+      <a class="nav-sub" href="#gpio-reg">寄存器详解</a>
+      <a class="nav-sub" href="#gpio-regcode">寄存器级配置</a>
+      <a class="nav-sub" href="#gpio-hal">HAL 库示例</a>
     </div>
+    <div class="group"><a class="nav-head" href="#comm">二、通信协议总览 <span class="tag comm">COMM</span></a>
+      <a class="nav-sub" href="#comm-class">分类方式</a>
+      <a class="nav-sub" href="#comm-compare">协议对比</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#uart">三、UART / USART <span class="tag comm">COMM</span></a>
+      <a class="nav-sub" href="#uart-frame">帧格式与波特率</a>
+      <a class="nav-sub" href="#uart-parity">校验位原理</a>
+      <a class="nav-sub" href="#uart-level">电平标准</a>
+      <a class="nav-sub" href="#uart-flow">硬件流控</a>
+      <a class="nav-sub" href="#uart-hal">HAL 库示例</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#spi">四、SPI <span class="tag comm">COMM</span></a>
+      <a class="nav-sub" href="#spi-mode">4 种模式</a>
+      <a class="nav-sub" href="#spi-multi">多从机连接</a>
+      <a class="nav-sub" href="#spi-hal">HAL 库示例</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#i2c">五、I2C <span class="tag comm">COMM</span></a>
+      <a class="nav-sub" href="#i2c-timing">时序与应答</a>
+      <a class="nav-sub" href="#i2c-readwrite">完整读写流程</a>
+      <a class="nav-sub" href="#i2c-addr">7/10 位地址</a>
+      <a class="nav-sub" href="#i2c-arb">仲裁与时钟拉伸</a>
+      <a class="nav-sub" href="#i2c-pullup">上拉电阻选择</a>
+      <a class="nav-sub" href="#i2c-hal">HAL 库示例</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#can">六、CAN <span class="tag comm">COMM</span></a>
+      <a class="nav-sub" href="#can-frame">帧结构</a>
+      <a class="nav-sub" href="#can-arb">仲裁机制</a>
+      <a class="nav-sub" href="#can-bit">位时序与波特率</a>
+      <a class="nav-sub" href="#can-hal">HAL 库示例</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#others">七、其它协议 <span class="tag comm">COMM</span></a>
+      <a class="nav-sub" href="#onewire">1-Wire 单总线</a>
+      <a class="nav-sub" href="#rs485">RS485 / RS422</a>
+      <a class="nav-sub" href="#usb">USB 简介</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#timer">八、定时器与 PWM <span class="tag timer">TIM</span></a>
+      <a class="nav-sub" href="#timer-basic">定时基础</a>
+      <a class="nav-sub" href="#timer-pwm">PWM 输出</a>
+      <a class="nav-sub" href="#timer-ic">输入捕获</a>
+      <a class="nav-sub" href="#timer-oc">输出比较</a>
+      <a class="nav-sub" href="#timer-encoder">编码器模式</a>
+      <a class="nav-sub" href="#timer-hal">HAL 库示例</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#adc">九、ADC / DAC <span class="tag adc">ADC</span></a>
+      <a class="nav-sub" href="#adc-basic">ADC 基础</a>
+      <a class="nav-sub" href="#adc-mode">转换模式</a>
+      <a class="nav-sub" href="#adc-dma">ADC + DMA</a>
+      <a class="nav-sub" href="#dac">DAC</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#dma">十、中断与 DMA <span class="tag dma">DMA</span></a>
+      <a class="nav-sub" href="#irq-nvic">NVIC 优先级</a>
+      <a class="nav-sub" href="#irq-exti">外部中断 EXTI</a>
+      <a class="nav-sub" href="#dma-detail">DMA 详解</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#rcc">十一、时钟系统 RCC <span class="tag sys">SYS</span></a></div>
+    <div class="group"><a class="nav-head" href="#wdg">十二、看门狗 <span class="tag sys">SYS</span></a>
+      <a class="nav-sub" href="#iwdg">独立看门狗</a>
+      <a class="nav-sub" href="#wwdg">窗口看门狗</a>
+    </div>
+    <div class="group"><a class="nav-head" href="#cheatsheet">十三、速查表 <span class="tag timer">TIPS</span></a></div>
+    <div class="group"><a class="nav-head" href="#glossary">十四、术语表 <span class="tag sys">GLOSS</span></a></div>
+  </nav>
 
-    <!-- Hero -->
-    <section class="hero" id="home">
-        <div class="container">
-            <div class="hero-text">
-                <span class="hero-badge">🛵 火热招聘中</span>
-                <h1>东莞<em>围炒卷粿</em><br>诚聘骑手</h1>
-                <p class="hero-desc">
-                    地道东莞味，用心做好每一份卷粿。现因订单暴增，急需外卖骑手加入我们，一起把美味送到千家万户！
-                </p>
-                <div class="hero-stats">
-                    <div class="hero-stat">
-                        <h3>5+</h3><p>门店覆盖</p>
-                    </div>
-                    <div class="hero-stat">
-                        <h3>20+</h3><p>在招骑手</p>
-                    </div>
-                    <div class="hero-stat">
-                        <h3>8000+</h3><p>月均收入</p>
-                    </div>
-                </div>
-                <div class="hero-buttons">
-                    <a href="#apply" class="btn btn-primary">🚀 立即报名</a>
-                    <a href="#jobs" class="btn btn-outline">了解更多</a>
-                </div>
-            </div>
-            <div class="hero-visual">
-                <div class="hero-card">
-                    <div class="icon-circle">🛵</div>
-                    <h3>外卖骑手</h3>
-                    <p style="color:#888;">全职 / 兼职均可</p>
-                    <div class="salary">6000-12000<small>元/月</small></div>
-                    <div class="tags">
-                        <span class="tag">💰 多劳多得</span>
-                        <span class="tag">🏠 就近分配</span>
-                        <span class="tag">⏰ 时间灵活</span>
-                        <span class="tag">🎁 新人奖励</span>
-                    </div>
-                </div>
-            </div>
+  <main>
+    <h1>嵌入式学习笔记</h1>
+    <p class="lead">以 STM32 为主线，系统梳理 <b>GPIO 工作模式</b>与<b>通信协议</b>，并扩展定时器/PWM、ADC/DAC、中断/DMA、时钟系统与看门狗。含时序图、寄存器与 HAL 库代码，方便查阅与复习。</p>
+
+    <!-- ================= 一、GPIO ================= -->
+    <section id="gpio">
+      <h2>一、GPIO 工作模式 <span class="tag gpio">GPIO</span></h2>
+      <p>GPIO（General Purpose Input/Output，通用输入输出）是 MCU 最基础的外设。STM32 的每个引脚可独立配置为 <b>8 种工作模式</b>（4 输入 + 4 输出），由一组寄存器控制。</p>
+
+      <h3 id="gpio-struct">1.1 GPIO 内部结构</h3>
+      <p>每个引脚内部包含输入、输出两条通路，结构如下（以推挽为例）：</p>
+      <div class="fig">
+        <svg viewBox="0 0 720 230" font-family="sans-serif">
+          <rect x="20" y="90" width="150" height="50" rx="8" fill="none" stroke="#888" stroke-width="2"/>
+          <text x="95" y="120" font-size="13" fill="#888" text-anchor="middle">输出数据 ODR</text>
+          <rect x="190" y="80" width="120" height="70" rx="8" fill="none" stroke="#b45309" stroke-width="2"/>
+          <text x="250" y="108" font-size="13" fill="#b45309" text-anchor="middle">输出驱动</text>
+          <text x="250" y="128" font-size="12" fill="#b45309" text-anchor="middle">(推挽/开漏)</text>
+          <line x1="170" y1="115" x2="190" y2="115" stroke="#888" stroke-width="2" marker-end="url(#ar)"/>
+          <circle cx="360" cy="115" r="6" fill="#0b6bcb"/>
+          <text x="360" y="88" font-size="12" fill="#0b6bcb" text-anchor="middle">引脚 Pad</text>
+          <line x1="310" y1="115" x2="354" y2="115" stroke="#888" stroke-width="2"/>
+          <line x1="366" y1="115" x2="470" y2="115" stroke="#888" stroke-width="2" marker-end="url(#ar)"/>
+          <rect x="470" y="90" width="150" height="50" rx="8" fill="none" stroke="#0f766e" stroke-width="2"/>
+          <text x="545" y="120" font-size="13" fill="#0f766e" text-anchor="middle">施密特触发器</text>
+          <line x1="620" y1="115" x2="660" y2="115" stroke="#888" stroke-width="2" marker-end="url(#ar)"/>
+          <rect x="660" y="90" width="40" height="50" rx="6" fill="none" stroke="#888" stroke-width="2"/>
+          <text x="680" y="120" font-size="11" fill="#888" text-anchor="middle">IDR</text>
+          <path d="M360 121 L360 150 L250 150" stroke="#7c3aed" stroke-width="1.5" fill="none" marker-end="url(#ar)" stroke-dasharray="5"/>
+          <text x="300" y="168" font-size="12" fill="#7c3aed" text-anchor="middle">上拉/下拉电阻</text>
+          <text x="360" y="200" font-size="12" fill="#888" text-anchor="middle">模拟输入旁路：直接连 ADC（不经施密特触发器）</text>
+          <defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#888"/></marker></defs>
+        </svg>
+        <div class="cap">GPIO 内部结构：输入经施密特触发器进 IDR，输出由 ODR 经驱动电路到引脚</div>
+      </div>
+      <ul>
+        <li><b>输入通路</b>：引脚 → 上/下拉电阻 → 施密特触发器（整形成数字信号）→ 输入数据寄存器 IDR</li>
+        <li><b>输出通路</b>：输出数据寄存器 ODR → 输出驱动（推挽/开漏）→ 引脚</li>
+        <li><b>模拟输入</b>：旁路施密特触发器，直接连到 ADC，用于采样</li>
+        <li><b>复用功能</b>：引脚交给外设（USART/SPI/I2C/TIM），由外设驱动输出或读取输入</li>
+      </ul>
+
+      <h3 id="gpio-8modes">1.2 八种工作模式</h3>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>模式</th><th>方向</th><th>电气特性</th><th>典型用途</th></tr></thead>
+        <tbody>
+          <tr><td class="k">浮空输入</td><td>输入</td><td>内部无上下拉，悬空时电平不确定</td><td>外部电路已确定电平的输入</td></tr>
+          <tr><td class="k">上拉输入</td><td>输入</td><td>内部上拉，默认读到高电平</td><td>按键一端接 GND，按下读到低</td></tr>
+          <tr><td class="k">下拉输入</td><td>输入</td><td>内部下拉，默认读到低电平</td><td>按键一端接 VCC，按下读到高</td></tr>
+          <tr><td class="k">模拟输入</td><td>输入</td><td>旁路施密特触发器，直连 ADC</td><td>ADC 采样、模拟量测量</td></tr>
+          <tr><td class="k">推挽输出</td><td>输出</td><td>主动输出高/低，驱动强</td><td>点灯 LED、普通数字输出</td></tr>
+          <tr><td class="k">开漏输出</td><td>输出</td><td>只能拉低，高电平需外部上拉</td><td>I2C、电平转换、线与</td></tr>
+          <tr><td class="k">复用推挽</td><td>输出</td><td>由外设驱动，推挽特性</td><td>SPI 的 SCK/MOSI、PWM、USART_TX</td></tr>
+          <tr><td class="k">复用开漏</td><td>输出</td><td>由外设驱动，开漏特性</td><td>I2C 的 SCL/SDA</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="tip"><b>记忆口诀</b>输入四种：浮空 / 上拉 / 下拉 / 模拟；输出四种：推挽 / 开漏 / 复用推挽 / 复用开漏。“复用”= 把引脚交给外设控制。</div>
+
+      <h3 id="gpio-pushpull">1.3 推挽 vs 开漏（核心区别）</h3>
+      <div class="grid c2">
+        <div class="card">
+          <h4 style="margin-top:0">推挽输出 Push-Pull</h4>
+          <p>内部有<b>两个 MOS 管</b>（上管接 VCC、下管接 GND），输出高时上管导通、输出低时下管导通。</p>
+          <ul>
+            <li>能<b>主动输出高和低</b>，带负载能力强</li>
+            <li>输出电平明确、翻转快</li>
+            <li>两个推挽输出直接相连会短路，<b>不能线与</b></li>
+          </ul>
         </div>
+        <div class="card">
+          <h4 style="margin-top:0">开漏输出 Open-Drain</h4>
+          <p>只有<b>一个下管</b>接 GND，无上管。输出高时引脚呈<b>高阻态</b>，须靠<b>外部上拉电阻</b>拉到高电平。</p>
+          <ul>
+            <li>只能主动拉低，不能主动拉高</li>
+            <li>多个开漏可接一起，实现<b>线与</b>（任一拉低即为低）</li>
+            <li>改变上拉电压即可<b>电平转换</b></li>
+          </ul>
+        </div>
+      </div>
+      <div class="note"><b>为什么 I2C 用开漏？</b>I2C 总线上挂多个器件，需要“线与”做仲裁与应答（ACK）；开漏+上拉让任一器件拉低总线都不会烧引脚。同理开漏常用于多器件共享信号线或不同电压域间的通信。</div>
+
+      <h3 id="gpio-pull">1.4 上拉 / 下拉电阻</h3>
+      <p>上拉（Pull-up）把引脚默认拉高，下拉（Pull-down）默认拉低。作用是避免输入引脚<b>悬空</b>导致电平随机跳变，并给引脚一个确定默认状态。</p>
+      <div class="kv">
+        <span class="kk">上拉电阻</span><span>接 VCC，阻值常见 10kΩ（弱上拉），默认高电平</span>
+        <span class="kk">下拉电阻</span><span>接 GND，默认低电平</span>
+        <span class="kk">内部 vs 外部</span><span>STM32 内置约 40kΩ 弱上下拉，由 PUPDR 寄存器配置</span>
+        <span class="kk">选择依据</span><span>看“无输入时的默认状态”应是什么；按键接 GND 用上拉，接 VCC 用下拉</span>
+      </div>
+
+      <h3 id="gpio-schmitt">1.5 施密特触发器</h3>
+      <p>施密特触发器是一种<b>带迟滞（滞回）的比较器</b>，有两个阈值：高阈值 V<sub>T+</sub> 和低阈值 V<sub>T−</sub>。</p>
+      <ul>
+        <li>输入从低升高，超过 <b>V<sub>T+</sub></b> 才判为高；从高降低，低于 <b>V<sub>T−</sub></b> 才判为低</li>
+        <li>迟滞区间内保持原状态，<b>滤除噪声和抖动</b>，把缓变的模拟信号整形成干净的数字方波</li>
+        <li>数字输入都经过它；<b>模拟输入旁路它</b>以保留真实电压给 ADC</li>
+      </ul>
+
+      <h3 id="gpio-speed">1.6 输出速度与电气参数</h3>
+      <p>输出速度（OSPEEDR）控制输出驱动器的<b>翻转斜率</b>，决定最大切换速率。速度越快边沿越陡，EMI（电磁干扰）也越大。</p>
+      <div class="kv">
+        <span class="kk">低速</span><span>低频信号、普通 IO，功耗与 EMI 低</span>
+        <span class="kk">中速 / 高速</span><span>SPI 时钟、PWM 等中高频信号</span>
+        <span class="kk">极速</span><span>最高翻转速率，如高速 SPI/屏幕，注意 EMI</span>
+        <span class="kk">拉电流</span><span>引脚输出高时能提供的电流（通常 25mA 级）</span>
+        <span class="kk">灌电流</span><span>引脚输出低时能吸收的电流，通常与拉电流相近</span>
+      </div>
+      <div class="warn"><b>注意</b>直接驱动大电流负载（电机、继电器、大功率 LED）会烧引脚，需加三极管/MOS 管/驱动芯片。一个端口多个引脚的电流总和也有上限。</div>
+
+      <h3 id="gpio-af">1.7 复用功能（AF）映射</h3>
+      <p>复用功能让引脚被外设使用。STM32 每个引脚可复用多个外设，用 <b>AFR</b> 寄存器在 AF0~AF15 之间选择。例如 PA9 既可作 GPIO，也可复用为 USART1_TX（AF7）。</p>
+      <div class="note"><b>常用对照（STM32F4 为例）</b>USART1_TX=PA9、USART1_RX=PA10；SPI1 的 SCK=PA5、MISO=PA6、MOSI=PA7；I2C1 的 SCL=PB6、SDA=PB7。具体引脚与 AF 号需查芯片数据手册的「引脚复用表」。</div>
+
+      <h3 id="gpio-reg">1.8 相关寄存器详解</h3>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>寄存器</th><th>作用</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td class="k">MODER</td><td>模式选择</td><td>每 2 位控制一引脚：00 输入 / 01 通用输出 / 10 复用 / 11 模拟</td></tr>
+          <tr><td class="k">OTYPER</td><td>输出类型</td><td>0 推挽 / 1 开漏</td></tr>
+          <tr><td class="k">OSPEEDR</td><td>输出速度</td><td>00 低速 / 01 中速 / 10 高速 / 11 极速</td></tr>
+          <tr><td class="k">PUPDR</td><td>上下拉</td><td>00 无 / 01 上拉 / 10 下拉</td></tr>
+          <tr><td class="k">IDR</td><td>输入数据</td><td>只读，读引脚当前电平</td></tr>
+          <tr><td class="k">ODR</td><td>输出数据</td><td>写引脚输出电平（读写都可）</td></tr>
+          <tr><td class="k">BSRR</td><td>置位/复位</td><td>原子地置 1 或清 0，比改 ODR 更安全（避免读-改-写竞争）</td></tr>
+          <tr><td class="k">AFR</td><td>复用功能</td><td>AFRL（低 8 引脚）与 AFRH（高 8 引脚），各 4 位选 AF0~15</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3 id="gpio-regcode">1.9 寄存器级配置示例（非 HAL）</h3>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · 寄存器</span>
+<span class="c-cmt">// 把 PA5 配置为推挽输出，PA0 配置为模拟输入</span>
+RCC-&gt;AHB1ENR |= RCC_AHB1ENR_GPIOAEN;      <span class="c-cmt">// 使能 GPIOA 时钟</span>
+
+<span class="c-cmt">// PA5 → 通用输出</span>
+GPIOA-&gt;MODER   &amp;= ~(<span class="c-num">0x3</span> &lt;&lt; <span class="c-num">10</span>);  <span class="c-cmt">// 清 PA5 的 MODER 位</span>
+GPIOA-&gt;MODER   |=  (<span class="c-num">0x1</span> &lt;&lt; <span class="c-num">10</span>);  <span class="c-cmt">// 01 = 通用输出</span>
+GPIOA-&gt;OTYPER &amp;= ~(<span class="c-num">0x1</span> &lt;&lt; <span class="c-num">5</span>);   <span class="c-cmt">// 0 = 推挽</span>
+GPIOA-&gt;OSPEEDR|=  (<span class="c-num">0x2</span> &lt;&lt; <span class="c-num">10</span>);  <span class="c-cmt">// 高速</span>
+GPIOA-&gt;PUPDR  &amp;= ~(<span class="c-num">0x3</span> &lt;&lt; <span class="c-num">10</span>);  <span class="c-cmt">// 无上下拉</span>
+
+<span class="c-cmt">// PA0 → 模拟输入</span>
+GPIOA-&gt;MODER |= (<span class="c-num">0x3</span> &lt;&lt; <span class="c-num">0</span>);      <span class="c-cmt">// 11 = 模拟</span>
+
+<span class="c-cmt">// 输出：用 BSRR 原子地置位/复位</span>
+GPIOA-&gt;BSRR = (<span class="c-num">1</span> &lt;&lt; <span class="c-num">5</span>);    <span class="c-cmt">// PA5 置高（低 16 位 = 置位）</span>
+GPIOA-&gt;BSRR = (<span class="c-num">1</span> &lt;&lt; (<span class="c-num">5</span>+<span class="c-num">16</span>)); <span class="c-cmt">// PA5 置低（高 16 位 = 复位）</span></div>
+
+      <h3 id="gpio-hal">1.10 HAL 库配置示例</h3>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+<span class="c-cmt">// 1. 推挽输出引脚（PA5 驱动 LED）</span>
+GPIO_InitTypeDef GPIO_InitStruct = {<span class="c-num">0</span>};
+__HAL_RCC_GPIOA_CLK_ENABLE();
+GPIO_InitStruct.Pin  = GPIO_PIN_5;
+GPIO_InitStruct.Mode = GPIO_MODE_OUTPUT_PP;    <span class="c-cmt">// 推挽输出</span>
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+GPIO_InitStruct.Speed = GPIO_SPEED_FREQ_HIGH;
+HAL_GPIO_Init(GPIOA, &amp;GPIO_InitStruct);
+
+<span class="c-cmt">// 2. 上拉输入（PC13 接按键到 GND）</span>
+GPIO_InitStruct.Pin  = GPIO_PIN_13;
+GPIO_InitStruct.Mode = GPIO_MODE_INPUT;
+GPIO_InitStruct.Pull = GPIO_PULLUP;            <span class="c-cmt">// 上拉输入</span>
+HAL_GPIO_Init(GPIOC, &amp;GPIO_InitStruct);
+
+<span class="c-cmt">// 3. 模拟输入（PA0 接 ADC）</span>
+GPIO_InitStruct.Pin  = GPIO_PIN_0;
+GPIO_InitStruct.Mode = GPIO_MODE_ANALOG;       <span class="c-cmt">// 模拟输入</span>
+GPIO_InitStruct.Pull = GPIO_NOPULL;
+HAL_GPIO_Init(GPIOA, &amp;GPIO_InitStruct);
+
+<span class="c-cmt">// 4. 读写</span>
+HAL_GPIO_WritePin(GPIOA, GPIO_PIN_5, GPIO_PIN_SET);
+GPIO_PinState s = HAL_GPIO_ReadPin(GPIOC, GPIO_PIN_13);
+HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);</div>
     </section>
 
-    <!-- About -->
-    <section class="about section" id="about">
-        <div class="container">
-            <h2 class="section-title">关于东莞围炒卷粿</h2>
-            <p class="section-subtitle">陆丰本地人气小吃品牌，用心传承地道美味</p>
-            <div class="about-grid">
-                <div class="about-image">🫓</div>
-                <div class="about-content">
-                    <h2>一碗卷粿，一份匠心</h2>
-                    <p>
-                        东莞围炒卷粿创立于东莞围，主打传统手工卷粿及各类特色小吃。
-                        我们坚持选用新鲜食材，纯手工制作，每一份卷粿都承载着陆丰人记忆中的味道。
-                    </p>
-                    <p>
-                        经过多年发展，已在东海开设<strong>5家门店</strong>，覆盖东海、六译、龙潭、城东等区域。
-                        现因外卖订单量持续增长，急需扩充配送团队！
-                    </p>
-                    <p style="margin-top:6px;">
-                        🧑‍🍳 <strong>店长：陈鹏旭</strong> — 多年餐饮行业经验，亲自把控出品品质，真诚对待每一位伙伴。
-                    </p>
-                    <ul class="about-features">
-                        <li>东莞本地知名小吃品牌，订单稳定有保障</li>
-                        <li>自有中央厨房，出餐快、取餐不等待</li>
-                        <li>店长陈鹏旭亲自带团队，氛围融洽，真诚对待每一位员工</li>
-                        <li>新骑手有师傅带，上手无忧</li>
-                    </ul>
-                </div>
-            </div>
+    <!-- ================= 二、通信协议总览 ================= -->
+    <section id="comm">
+      <h2>二、通信协议总览 <span class="tag comm">COMM</span></h2>
+
+      <h3 id="comm-class">2.1 分类方式</h3>
+      <div class="grid c3">
+        <div class="card">
+          <h4 style="margin-top:0">按是否同步</h4>
+          <ul>
+            <li><b>同步</b>：有独立时钟线（SPI、I2C），双方靠时钟对齐</li>
+            <li><b>异步</b>：无时钟线（UART、CAN），靠约定速率（波特率）</li>
+          </ul>
         </div>
+        <div class="card">
+          <h4 style="margin-top:0">按传输方向</h4>
+          <ul>
+            <li><b>单工</b>：只发或只收（如收音机）</li>
+            <li><b>半双工</b>：可收发但同一时刻只能一方发（I2C、CAN）</li>
+            <li><b>全双工</b>：同时收发（SPI、UART）</li>
+          </ul>
+        </div>
+        <div class="card">
+          <h4 style="margin-top:0">按数据线数</h4>
+          <ul>
+            <li><b>串行</b>：逐位传输，线少（UART/SPI/I2C/CAN）</li>
+            <li><b>并行</b>：多根线同时传多位，快但线多、易串扰</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 id="comm-compare">2.2 协议对比</h3>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>协议</th><th>线数</th><th>同步/异步</th><th>方向</th><th>速率</th><th>多节点</th><th>典型场景</th></tr></thead>
+        <tbody>
+          <tr><td class="k">UART</td><td>2~4</td><td>异步</td><td>全双工</td><td>9600~115200 bps</td><td>点对点</td><td>调试、蓝牙/GPS 模块</td></tr>
+          <tr><td class="k">SPI</td><td>4</td><td>同步</td><td>全双工</td><td>可达数十 MHz</td><td>一主多从(片选)</td><td>Flash、屏幕、高速传感器</td></tr>
+          <tr><td class="k">I2C</td><td>2</td><td>同步</td><td>半双工</td><td>100k/400k/1M/3.4M</td><td>多主多从(寻址)</td><td>EEPROM、传感器、RTC</td></tr>
+          <tr><td class="k">CAN</td><td>2</td><td>异步</td><td>半双工</td><td>最高 1 Mbps</td><td>多主(按 ID)</td><td>汽车、工业现场总线</td></tr>
+          <tr><td class="k">1-Wire</td><td>1</td><td>异步</td><td>半双工</td><td>较低</td><td>多从机(ROM 地址)</td><td>DS18B20 等单总线传感器</td></tr>
+          <tr><td class="k">RS485</td><td>2</td><td>异步</td><td>半双工</td><td>最高 ~10 Mbps</td><td>多节点</td><td>长距离工业组网、Modbus</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="tip"><b>选型直觉</b>速度优先选 SPI；引脚紧张选 I2C（2 线多器件）或 1-Wire；长距离/强干扰/多节点选 CAN 或 RS485；最简单点对点调试选 UART。</div>
     </section>
 
-    <!-- Jobs -->
-    <section class="jobs section" id="jobs">
-        <div class="container">
-            <h2 class="section-title">招聘岗位</h2>
-            <p class="section-subtitle">多岗位开放，总有一个适合你</p>
-            <div class="job-cards">
-                <!-- Job 1 -->
-                <div class="job-card featured">
-                    <div class="job-icon">🛵</div>
-                    <h3>全职外卖骑手</h3>
-                    <div class="job-salary">7000-12000<small>元/月</small></div>
-                    <ul>
-                        <li>负责门店3公里范围内外卖配送</li>
-                        <li>每天工作8-10小时，月休4天</li>
-                        <li>底薪 + 按单提成 + 全勤奖</li>
-                        <li>公司提供电动车（可自带补贴）</li>
-                        <li>有社保 + 意外险保障</li>
-                    </ul>
-                </div>
-                <!-- Job 2 -->
-                <div class="job-card">
-                    <div class="job-icon">⏰</div>
-                    <h3>兼职骑手</h3>
-                    <div class="job-salary">3000-6000<small>元/月</small></div>
-                    <ul>
-                        <li>时间灵活，可自由选择班次</li>
-                        <li>按单结算，多跑多得</li>
-                        <li>适合学生、兼职人群</li>
-                        <li>最少每天工作4小时</li>
-                        <li>公司提供意外险</li>
-                    </ul>
-                </div>
-                <!-- Job 3 -->
-                <div class="job-card">
-                    <div class="job-icon">🌙</div>
-                    <h3>夜班骑手</h3>
-                    <div class="job-salary">8000-15000<small>元/月</small></div>
-                    <ul>
-                        <li>负责晚间时段配送（18:00-02:00）</li>
-                        <li>夜班补贴 + 更高单均提成</li>
-                        <li>订单集中、收入更有保障</li>
-                        <li>全职待遇，月休4天</li>
-                        <li>夜班安全保障措施到位</li>
-                    </ul>
-                </div>
-            </div>
-        </div>
+    <!-- ================= 三、UART ================= -->
+    <section id="uart">
+      <h2>三、UART / USART <span class="tag comm">COMM</span></h2>
+      <p>UART（Universal Asynchronous Receiver/Transmitter）是<b>异步串行</b>通信，无时钟线，收发双方需<b>预先约定波特率</b>。USART 在 UART 基础上支持同步模式，实际多当异步串口用。</p>
+
+      <h3 id="uart-frame">3.1 帧格式与波特率</h3>
+      <p>一帧由<b>起始位、数据位、校验位、停止位</b>组成，空闲时线路保持高电平。</p>
+      <div class="fig">
+        <svg viewBox="0 0 720 150" font-family="sans-serif">
+          <line x1="20" y1="40" x2="120" y2="40" stroke="#999" stroke-width="2"/>
+          <text x="24" y="28" font-size="12" fill="#888">空闲(高)</text>
+          <path d="M120 40 L130 40 L130 100 L190 100" stroke="#0b6bcb" fill="none" stroke-width="2"/>
+          <text x="128" y="120" font-size="12" fill="#0b6bcb" text-anchor="middle">起始位(低)</text>
+          <path d="M190 100 L230 100 L230 40 L320 40 L320 100 L360 100" stroke="#0b6bcb" fill="none" stroke-width="2"/>
+          <text x="255" y="120" font-size="12" fill="#0b6bcb" text-anchor="middle">数据位(LSB→MSB)</text>
+          <path d="M360 100 L430 100" stroke="#b45309" fill="none" stroke-width="2"/>
+          <text x="395" y="120" font-size="12" fill="#b45309" text-anchor="middle">校验位</text>
+          <path d="M430 100 L470 100 L470 40 L520 40" stroke="#0f766e" fill="none" stroke-width="2"/>
+          <text x="495" y="120" font-size="12" fill="#0f766e" text-anchor="middle">停止位(高)</text>
+        </svg>
+        <div class="cap">UART 帧时序：起始位为 1 个低电平 bit，数据位从最低位(LSB)开始发送</div>
+      </div>
+      <div class="kv">
+        <span class="kk">波特率 Baud</span><span>每秒传输的<b>位(bit)</b>数，常见 9600 / 115200；收发双方必须一致</span>
+        <span class="kk">比特率 vs 波特率</span><span>二进制下二者数值相等；波特率指“符号/秒”，每符号 1 bit 时相同</span>
+        <span class="kk">数据位</span><span>5~9 位，常见 <b>8 位</b></span>
+        <span class="kk">停止位</span><span>1 或 2 位，常见 <b>1 位</b></span>
+      </div>
+      <div class="warn"><b>常见坑</b>波特率不匹配、TX/RX 接线<b>交叉</b>（A 的 TX 接 B 的 RX）、未共地（GND 必须相连）是串口不通的三大原因。</div>
+
+      <h3 id="uart-parity">3.2 校验位原理</h3>
+      <p>校验位用于<b>简单检错</b>：发送方统计数据位中「1」的个数，按约定加一位使总数满足奇偶性；接收方复核。</p>
+      <div class="kv">
+        <span class="kk">偶校验</span><span>数据位 + 校验位中「1」的个数为<b>偶数</b></span>
+        <span class="kk">奇校验</span><span>「1」的个数为<b>奇数</b></span>
+        <span class="kk">无校验</span><span>不加校验位，最常见</span>
+      </div>
+      <div class="note"><b>例</b>发送数据 <code>0b10110001</code>（4 个 1）：偶校验加 0（保持偶数），奇校验加 1（凑成 5 个奇数）。奇偶校验只能发现单 bit 错，不能纠错。</div>
+
+      <h3 id="uart-level">3.3 电平标准</h3>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>标准</th><th>逻辑电平</th><th>特点</th></tr></thead>
+        <tbody>
+          <tr><td class="k">TTL</td><td>高≈3.3V/5V，低≈0V</td><td>MCU 引脚直接输出，仅适合短距离板内</td></tr>
+          <tr><td class="k">RS232</td><td>逻辑1 −3V~−15V，逻辑0 +3V~+15V</td><td>电平反相、电压高，抗干扰强，需 MAX232 等转换芯片</td></tr>
+          <tr><td class="k">RS485</td><td>差分 A/B 两线</td><td>抗共模干扰、多节点、可千米级，半双工</td></tr>
+          <tr><td class="k">RS422</td><td>差分 4 线（双差分对）</td><td>全双工版 RS485，点对多点</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3 id="uart-flow">3.4 硬件流控</h3>
+      <p>硬件流控用 <b>RTS/CTS</b> 两根线，防止接收方缓冲区溢出：接收方忙时拉低 RTS，通知发送方暂停；发送方看 CTS 决定是否发。多数简单场景用「无流控」（NONE）即可。</p>
+
+      <h3 id="uart-hal">3.5 HAL 库示例</h3>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+<span class="c-cmt">// 初始化 USART1（PA9=TX, PA10=RX），115200 8N1</span>
+UART_HandleTypeDef huart1;
+huart1.Instance          = USART1;
+huart1.Init.BaudRate     = <span class="c-num">115200</span>;
+huart1.Init.WordLength   = UART_WORDLENGTH_8B;
+huart1.Init.StopBits     = UART_STOPBITS_1;
+huart1.Init.Parity       = UART_PARITY_NONE;
+huart1.Init.Mode         = UART_MODE_TX_RX;
+huart1.Init.HwFlowCtl    = UART_HWCONTROL_NONE;
+HAL_UART_Init(&amp;huart1);
+
+<span class="c-cmt">// 阻塞发送</span>
+uint8_t msg[] = <span class="c-str">"Hello STM32\r\n"</span>;
+HAL_UART_Transmit(&amp;huart1, msg, sizeof(msg)<span class="c-num">-1</span>, <span class="c-num">1000</span>);
+
+<span class="c-cmt">// 中断接收（NVIC 需开启 USART1 中断）</span>
+uint8_t ch;
+HAL_UART_Receive_IT(&amp;huart1, &amp;ch, <span class="c-num">1</span>);
+<span class="c-kw">void</span> HAL_UART_RxCpltCallback(UART_HandleTypeDef *h){
+  HAL_UART_Transmit(&amp;huart1, &amp;ch, <span class="c-num">1</span>, <span class="c-num">1000</span>); <span class="c-cmt">// 回显</span>
+  HAL_UART_Receive_IT(&amp;huart1, &amp;ch, <span class="c-num">1</span>);          <span class="c-cmt">// 再次开启</span>
+}
+
+<span class="c-cmt">// DMA 接收（大批量数据不丢帧）</span>
+uint8_t buf[<span class="c-num">256</span>];
+HAL_UART_Receive_DMA(&amp;huart1, buf, <span class="c-num">256</span>);</div>
     </section>
 
-    <!-- Requirements -->
-    <section class="requirements section" id="requirements">
-        <div class="container">
-            <h2 class="section-title">应聘要求</h2>
-            <p class="section-subtitle">门槛不高，只要你肯干</p>
-            <div class="req-grid">
-                <div class="req-item">
-                    <div class="req-icon">🎂</div>
-                    <h4>年龄要求</h4>
-                    <p>18-50周岁，身体健康</p>
-                </div>
-                <div class="req-item">
-                    <div class="req-icon">🪪</div>
-                    <h4>证件要求</h4>
-                    <p>持有有效身份证，会骑电动车</p>
-                </div>
-                <div class="req-item">
-                    <div class="req-icon">📱</div>
-                    <h4>手机导航</h4>
-                    <p>会使用智能手机和导航软件</p>
-                </div>
-                <div class="req-item">
-                    <div class="req-icon">😊</div>
-                    <h4>服务意识</h4>
-                    <p>有责任心，服务态度好</p>
-                </div>
-                <div class="req-item">
-                    <div class="req-icon">🗺️</div>
-                    <h4>熟悉路况</h4>
-                    <p>熟悉东莞本地路况者优先</p>
-                </div>
-                <div class="req-item">
-                    <div class="req-icon">📋</div>
-                    <h4>经验不限</h4>
-                    <p>无经验可培训，有配送经验更佳</p>
-                </div>
-            </div>
+    <!-- ================= 四、SPI ================= -->
+    <section id="spi">
+      <h2>四、SPI <span class="tag comm">COMM</span></h2>
+      <p>SPI（Serial Peripheral Interface）是<b>同步全双工</b>通信，主机提供时钟，速率高、实现简单，但<b>引脚多、无寻址机制</b>（靠片选线选从机）。</p>
+      <div class="grid c3">
+        <div class="card"><h4 style="margin-top:0">SCK</h4><p>串行时钟，由主机产生</p></div>
+        <div class="card"><h4 style="margin-top:0">MOSI</h4><p>主机输出、从机输入（Master Out Slave In）</p></div>
+        <div class="card"><h4 style="margin-top:0">MISO</h4><p>主机输入、从机输出（Master In Slave Out）</p></div>
+        <div class="card"><h4 style="margin-top:0">NSS / CS</h4><p>片选，低电平选中从机，多从机共享总线</p></div>
+      </div>
+
+      <h3 id="spi-mode">4.1 四种工作模式（CPOL / CPHA）</h3>
+      <p>由 <b>CPOL</b>（时钟空闲电平）和 <b>CPHA</b>（第几个边沿采样）决定，主机与从机必须设<b>同一模式</b>。</p>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>模式</th><th>CPOL</th><th>CPHA</th><th>空闲电平</th><th>采样边沿</th></tr></thead>
+        <tbody>
+          <tr><td class="k">Mode 0</td><td>0</td><td>0</td><td>低</td><td>上升沿采样</td></tr>
+          <tr><td class="k">Mode 1</td><td>0</td><td>1</td><td>低</td><td>下降沿采样</td></tr>
+          <tr><td class="k">Mode 2</td><td>1</td><td>0</td><td>高</td><td>下降沿采样</td></tr>
+          <tr><td class="k">Mode 3</td><td>1</td><td>1</td><td>高</td><td>上升沿采样</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="note"><b>记忆</b>CPOL 决定“闲时高还是低”，CPHA 决定“用哪个边沿”。CPHA=0 在<b>第一个边沿</b>采样，CPHA=1 在<b>第二个边沿</b>采样。多数器件默认 <b>Mode 0</b>。</div>
+
+      <h3 id="spi-multi">4.2 多从机连接方式</h3>
+      <div class="grid c2">
+        <div class="card">
+          <h4 style="margin-top:0">独立片选（常用）</h4>
+          <p>每个从机一根独立 CS 线，主机分别控制。从机之间 MISO/MOSI/SCK 并联，CS 独立。需要主机有足够的 GPIO 作片选。</p>
         </div>
+        <div class="card">
+          <h4 style="margin-top:0">菊花链 Daisy Chain</h4>
+          <p>从机串接：主机的 MOSI 接第一个从机，前一个从机的 MISO 接下一个的 MOSI，所有从机共享 CS 和 SCK。省片选线，但数据需逐级移位，延迟大。</p>
+        </div>
+      </div>
+
+      <h3 id="spi-hal">4.3 HAL 库示例</h3>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+<span class="c-cmt">// SPI1：PA5=SCK, PA6=MISO, PA7=MOSI，主模式、Mode 0</span>
+SPI_HandleTypeDef hspi1;
+hspi1.Instance               = SPI1;
+hspi1.Init.Mode              = SPI_MODE_MASTER;
+hspi1.Init.Direction         = SPI_DIRECTION_2LINES;
+hspi1.Init.DataSize          = SPI_DATASIZE_8BIT;
+hspi1.Init.CLKPolarity       = SPI_POLARITY_LOW;      <span class="c-cmt">// CPOL=0</span>
+hspi1.Init.CLKPhase          = SPI_PHASE_1EDGE;       <span class="c-cmt">// CPHA=0</span>
+hspi1.Init.NSS               = SPI_NSS_SOFT;          <span class="c-cmt">// 软件片选</span>
+hspi1.Init.BaudRatePrescaler = SPI_BAUDRATEPRESCALER_16;
+hspi1.Init.CRCPolynomial     = <span class="c-num">7</span>;
+HAL_SPI_Init(&amp;hspi1);
+
+uint8_t tx[<span class="c-num">2</span>] = {<span class="c-num">0x00</span>, <span class="c-num">0xFF</span>}, rx[<span class="c-num">2</span>];
+HAL_GPIO_WritePin(CS_GPIO, CS_PIN, GPIO_PIN_RESET);
+HAL_SPI_TransmitReceive(&amp;hspi1, tx, rx, <span class="c-num">2</span>, <span class="c-num">1000</span>);
+HAL_GPIO_WritePin(CS_GPIO, CS_PIN, GPIO_PIN_SET);</div>
     </section>
 
-    <!-- Benefits -->
-    <section class="benefits section" id="benefits">
-        <div class="container">
-            <h2 class="section-title">薪资福利</h2>
-            <p class="section-subtitle">你的付出，我们用心回报</p>
-            <div class="benefit-grid">
-                <div class="benefit-card">
-                    <div class="b-icon">💰</div>
-                    <h4>高额收入</h4>
-                    <p>底薪+提成+奖金，综合月薪6000-15000元，上不封顶</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="b-icon">🎯</div>
-                    <h4>新人奖励</h4>
-                    <p>入职首月额外新人补贴500元，跑满单量再加300元</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="b-icon">🛡️</div>
-                    <h4>保险保障</h4>
-                    <p>全员购买意外保险，全职骑手缴纳社保，安心跑单</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="b-icon">🏠</div>
-                    <h4>就近分配</h4>
-                    <p>根据居住地址就近安排门店，通勤无忧</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="b-icon">🔋</div>
-                    <h4>车辆支持</h4>
-                    <p>公司提供电动车及充电，也可自带车辆领取补贴</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="b-icon">📈</div>
-                    <h4>晋升空间</h4>
-                    <p>优秀骑手可晋升为配送队长、门店管理，发展路径清晰</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="b-icon">🍜</div>
-                    <h4>员工餐补</h4>
-                    <p>工作日提供餐补或免费员工餐，吃饱再出发</p>
-                </div>
-                <div class="benefit-card">
-                    <div class="b-icon">🎉</div>
-                    <h4>节日福利</h4>
-                    <p>节假日红包、团建聚餐、年终奖励，像家人一样</p>
-                </div>
-            </div>
+    <!-- ================= 五、I2C ================= -->
+    <section id="i2c">
+      <h2>五、I2C <span class="tag comm">COMM</span></h2>
+      <p>I2C（Inter-Integrated Circuit）是<b>两线制、半双工、多主多从</b>总线，仅需 <b>SDA</b>（数据）和 <b>SCL</b>（时钟）。两根线都是<b>开漏输出 + 外部上拉</b>。</p>
+      <div class="kv">
+        <span class="kk">SDA</span><span>串行数据线，双向</span>
+        <span class="kk">SCL</span><span>串行时钟线，由主机驱动</span>
+        <span class="kk">地址</span><span>7 位地址 + 1 位读写位；也支持 10 位地址</span>
+      </div>
+
+      <h3 id="i2c-timing">5.1 时序与应答</h3>
+      <div class="fig">
+        <svg viewBox="0 0 720 170" font-family="sans-serif">
+          <text x="20" y="30" font-size="13" fill="#888">SDA</text>
+          <text x="20" y="90" font-size="13" fill="#888">SCL</text>
+          <path d="M70 90 L70 60 L120 60 L120 90 L170 90 L170 60 L220 60 L220 90 L270 90 L270 60 L320 60 L320 90 L370 90 L370 60 L420 60 L420 90 L470 90 L470 60 L520 60 L520 90 L570 90 L570 60 L620 60 L620 90" stroke="#0b6bcb" fill="none" stroke-width="2"/>
+          <path d="M60 30 L60 130 L70 130 L70 30 L120 30 L120 130 L170 130 L170 30 L220 30 L220 130 L270 130 L270 30 L320 30 L320 130 L370 130 L370 30 L420 30 L420 130 L470 130 L470 30 L520 30 L520 130 L570 130 L570 30 L620 30 L620 130 L630 130 L630 30 L650 30" stroke="#b45309" fill="none" stroke-width="2"/>
+          <text x="118" y="150" font-size="12" fill="#b45309" text-anchor="middle">起始</text>
+          <text x="645" y="150" font-size="12" fill="#b45309" text-anchor="middle">停止</text>
+          <text x="160" y="18" font-size="12" fill="#888" text-anchor="middle">SCL 高电平期间数据必须稳定</text>
+        </svg>
+        <div class="cap">I2C 时序：SCL 高电平期间 SDA 跳变 = 起始/停止；数据仅在 SCL 低电平期间变化</div>
+      </div>
+      <div class="grid c2">
+        <div class="card">
+          <h4 style="margin-top:0">起始 / 停止条件</h4>
+          <ul>
+            <li><b>起始 START</b>：SCL 高时，SDA 由高 → 低</li>
+            <li><b>停止 STOP</b>：SCL 高时，SDA 由低 → 高</li>
+            <li>数据在 SCL 高电平期间有效，SCL 低电平期间才允许 SDA 变化</li>
+          </ul>
         </div>
+        <div class="card">
+          <h4 style="margin-top:0">应答 ACK / NACK</h4>
+          <ul>
+            <li>每传完 8 位，第 9 个时钟由<b>接收方</b>拉低 SDA 表示 <b>ACK</b></li>
+            <li>保持高表示 <b>NACK</b>（未应答，常表示结束或无响应）</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 id="i2c-readwrite">5.2 完整读写流程</h3>
+      <p>典型「写一个字节到器件内部寄存器」：<b>起始 → 器件地址(写) → ACK → 寄存器地址 → ACK → 数据 → ACK → 停止</b>。读操作需「起始 → 地址(写) → 寄存器地址 → 重新起始 → 地址(读) → 读数据 → NACK → 停止」。</p>
+
+      <h3 id="i2c-addr">5.3 7 位 / 10 位地址</h3>
+      <div class="kv">
+        <span class="kk">7 位地址</span><span>地址段 7 位 + 1 位读写位（R/W），支持 128 个地址，最常用</span>
+        <span class="kk">10 位地址</span><span>分两段传输，扩展寻址空间，较少用</span>
+        <span class="kk">HAL 库注意</span><span>7 位地址需<b>左移 1 位</b>传给 HAL 函数（低 1 位为读写位）</span>
+      </div>
+
+      <h3 id="i2c-arb">5.4 多主机仲裁与时钟拉伸</h3>
+      <div class="grid c2">
+        <div class="card">
+          <h4 style="margin-top:0">总线仲裁</h4>
+          <p>多主机同时发数据时，靠<b>线与</b>逐位仲裁：发「1」的主机若检测到总线被拉低，说明有其它主机发了「0」，则自动退出发送。这样<b>地址/数据小的优先</b>，且不损坏总线。</p>
+        </div>
+        <div class="card">
+          <h4 style="margin-top:0">时钟拉伸</h4>
+          <p>从机处理不过来时，可主动把 <b>SCL 拉低</b>，主机检测到 SCL 未释放便等待，实现<b>从机调速</b>。不是所有器件都支持，高速模式下也受限制。</p>
+        </div>
+      </div>
+
+      <h3 id="i2c-pullup">5.5 上拉电阻选择</h3>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>速度</th><th>典型上拉电阻</th></tr></thead>
+        <tbody>
+          <tr><td>标准模式 100 kbps</td><td>4.7 kΩ</td></tr>
+          <tr><td>快速模式 400 kbps</td><td>2.2 kΩ</td></tr>
+          <tr><td>快速+ / 高速</td><td>更小（如 1 kΩ 或主动上拉）</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="note"><b>原理</b>电阻太大 → 上升沿变缓、速度受限；电阻太小 → 灌电流过大、功耗高。总线越长、寄生电容越大，需要越小上拉。</div>
+
+      <h3 id="i2c-hal">5.6 HAL 库示例</h3>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+I2C_HandleTypeDef hi2c1;
+hi2c1.Instance             = I2C1;
+hi2c1.Init.ClockSpeed      = <span class="c-num">400000</span>;        <span class="c-cmt">// 快速模式 400k</span>
+hi2c1.Init.DutyCycle       = I2C_DUTYCYCLE_2;
+hi2c1.Init.OwnAddress1     = <span class="c-num">0</span>;
+hi2c1.Init.AddressingMode  = I2C_ADDRESSINGMODE_7BIT;
+HAL_I2C_Init(&amp;hi2c1);
+
+<span class="c-cmt">// 写 1 字节到器件 0x50 的寄存器 0x00</span>
+uint8_t reg = <span class="c-num">0x00</span>, data = <span class="c-num">0x55</span>;
+HAL_I2C_Mem_Write(&amp;hi2c1, <span class="c-num">0x50</span>&lt;&lt;<span class="c-num">1</span>, reg, I2C_MEMADD_SIZE_8BIT, &amp;data, <span class="c-num">1</span>, <span class="c-num">1000</span>);
+
+<span class="c-cmt">// 读回</span>
+uint8_t rd;
+HAL_I2C_Mem_Read(&amp;hi2c1, <span class="c-num">0x50</span>&lt;&lt;<span class="c-num">1</span>, reg, I2C_MEMADD_SIZE_8BIT, &amp;rd, <span class="c-num">1</span>, <span class="c-num">1000</span>);</div>
     </section>
 
-    <!-- Apply Form -->
-    <section class="apply section" id="apply">
-        <div class="container">
-            <h2 class="section-title">在线报名</h2>
-            <p class="section-subtitle">填写信息，我们会在24小时内联系您</p>
-            <div class="form-wrapper">
-                <form id="applyForm">
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="name">姓名 *</label>
-                            <input type="text" id="name" placeholder="请输入您的姓名" required>
-                        </div>
-                        <div class="form-group">
-                            <label for="phone">手机号 *</label>
-                            <input type="tel" id="phone" placeholder="请输入手机号码" required>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="age">年龄</label>
-                            <input type="number" id="age" placeholder="请输入年龄" min="18" max="60">
-                        </div>
-                        <div class="form-group">
-                            <label for="jobType">应聘岗位 *</label>
-                            <select id="jobType" required>
-                                <option value="">请选择岗位</option>
-                                <option value="fulltime">全职外卖骑手</option>
-                                <option value="parttime">兼职骑手</option>
-                                <option value="night">夜班骑手</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-row">
-                        <div class="form-group">
-                            <label for="area">希望工作区域</label>
-                            <select id="area">
-                                <option value="">请选择区域</option>
-                                <option value="tanxi">谭西</option>
-                                <option value="chengdong">城东</option>
-                                <option value="mingchenghuayuan">名晟花园</option>
-                                <option value="majie">马街</option>
-                                <option value="renminlu">人民路</option>
-                                <option value="other">其他</option>
-                            </select>
-                        </div>
-                        <div class="form-group">
-                            <label for="experience">配送经验</label>
-                            <select id="experience">
-                                <option value="">请选择</option>
-                                <option value="none">无经验</option>
-                                <option value="some">1年以下</option>
-                                <option value="one">1-3年</option>
-                                <option value="many">3年以上</option>
-                            </select>
-                        </div>
-                    </div>
-                    <div class="form-group full">
-                        <label for="remark">备注</label>
-                        <textarea id="remark" placeholder="如有其他想说的，可以写在这里（选填）"></textarea>
-                    </div>
-                    <button type="submit" class="btn btn-primary form-submit">📩 提交申请</button>
-                    <p class="form-note">* 提交即表示同意我们将您的信息用于招聘联系，我们承诺保护您的隐私</p>
-                </form>
-            </div>
+    <!-- ================= 六、CAN ================= -->
+    <section id="can">
+      <h2>六、CAN <span class="tag comm">COMM</span></h2>
+      <p>CAN（Controller Area Network）是一种<b>差分、多主机、基于消息 ID 仲裁</b>的现场总线，广泛用于汽车与工业控制，抗干扰强、可靠性高。</p>
+      <div class="grid c2">
+        <div class="card">
+          <h4 style="margin-top:0">物理层</h4>
+          <ul>
+            <li>两根线 <b>CAN_H</b> 与 <b>CAN_L</b>，差分传输</li>
+            <li><b>显性(0)</b>：CAN_H≈3.5V、CAN_L≈1.5V；<b>隐性(1)</b>：两线都≈2.5V</li>
+            <li>总线两端各接 <b>120Ω 终端电阻</b>，消除反射</li>
+          </ul>
         </div>
+        <div class="card">
+          <h4 style="margin-top:0">特点</h4>
+          <ul>
+            <li>无地址，按<b>消息 ID</b>通信（内容寻址）</li>
+            <li>多主结构，任何节点可主动发送</li>
+            <li>带 CRC 校验、错误检测与自动重发，可靠性高</li>
+          </ul>
+        </div>
+      </div>
+
+      <h3 id="can-frame">6.1 帧结构</h3>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>段</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td class="k">SOF 帧起始</td><td>1 位显性(0)，表示帧开始</td></tr>
+          <tr><td class="k">仲裁段</td><td>ID（11 位标准 / 29 位扩展）+ RTR（远程帧标志）</td></tr>
+          <tr><td class="k">控制段</td><td>IDE（扩展标志）+ DLC（数据长度 0~8 字节）</td></tr>
+          <tr><td class="k">数据段</td><td>0~8 字节数据</td></tr>
+          <tr><td class="k">CRC 段</td><td>15 位 CRC 校验 + 界定符</td></tr>
+          <tr><td class="k">ACK 段</td><td>接收节点确认</td></tr>
+          <tr><td class="k">EOF 帧结束</td><td>7 位隐性位</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>帧类型</th><th>作用</th></tr></thead>
+        <tbody>
+          <tr><td class="k">数据帧</td><td>传输数据（0~8 字节），最常见</td></tr>
+          <tr><td class="k">远程帧</td><td>请求其它节点发送数据</td></tr>
+          <tr><td class="k">错误帧</td><td>检测到错误时发出</td></tr>
+          <tr><td class="k">过载帧</td><td>延迟下一帧传输</td></tr>
+        </tbody>
+      </table>
+      </div>
+
+      <h3 id="can-arb">6.2 仲裁机制</h3>
+      <p>多个节点同时发送时，靠<b>差分信号的非破坏性仲裁</b>：显性(0)覆盖隐性(1)。发送隐性位却检测到总线为显性的节点，说明有更高优先级的消息（ID 更小），立即<b>退出发送</b>。因此 <b>ID 越小优先级越高</b>，且不会像以太网那样冲突重传。</p>
+
+      <h3 id="can-bit">6.3 位时序与波特率</h3>
+      <p>一个 bit 时间被划分为同步段(SYNC_SEG)、传播段(PROP_SEG)、相位缓冲段 1(BS1)、相位缓冲段 2(BS2)，由预分频 BRP 决定时钟。</p>
+      <div class="code"><button class="copy">复制</button><span class="lang">公式</span>
+波特率 = APB 时钟 / (BRP × (1 + BS1 + BS2))
+
+例：APB1 = 36MHz，BRP=3，BS1=BS2=5
+  波特率 = 36M / (4 × 12) = 750 kbps</div>
+
+      <h3 id="can-hal">6.4 HAL 库示例</h3>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+CAN_HandleTypeDef hcan1;
+hcan1.Instance                  = CAN1;
+hcan1.Init.Prescaler            = <span class="c-num">3</span>;
+hcan1.Init.Mode                 = CAN_MODE_NORMAL;
+hcan1.Init.SyncJumpWidth        = CAN_SJW_1TQ;
+hcan1.Init.TimeSeg1             = CAN_BS1_5TQ;
+hcan1.Init.TimeSeg2             = CAN_BS2_5TQ;
+hcan1.Init.TimeTriggeredMode    = DISABLE;
+hcan1.Init.AutoBusOff           = ENABLE;
+hcan1.Init.AutoWakeUp           = DISABLE;
+hcan1.Init.AutoRetransmission   = ENABLE;
+hcan1.Init.ReceiveFifoLocked    = DISABLE;
+hcan1.Init.TransmitFifoPriority = DISABLE;
+HAL_CAN_Init(&amp;hcan1);
+
+<span class="c-cmt">// 发送一帧标准帧</span>
+CAN_TxHeaderTypeDef txh;
+txh.StdId    = <span class="c-num">0x123</span>;
+txh.ExtId    = <span class="c-num">0</span>;
+txh.IDE      = CAN_ID_STD;
+txh.RTR      = CAN_RTR_DATA;
+txh.DLC      = <span class="c-num">2</span>;
+uint8_t data[<span class="c-num">2</span>] = {<span class="c-num">0xAA</span>, <span class="c-num">0xBB</span>};
+uint32_t mailbox;
+HAL_CAN_AddTxMessage(&amp;hcan1, &amp;txh, data, &amp;mailbox);</div>
     </section>
 
-    <!-- Contact -->
-    <section class="contact section" id="contact">
-        <div class="container">
-            <h2 class="section-title">联系我们</h2>
-            <p class="section-subtitle">多个渠道，随时沟通</p>
-            <div class="contact-cards">
-                <div class="contact-card">
-                    <div class="c-icon">🧑‍🍳</div>
-                    <h4>店长：陈鹏旭</h4>
-                    <p>13437544521</p>
-                </div>
-                <div class="contact-card">
-                    <div class="c-icon">📞</div>
-                    <h4>招聘热线</h4>
-                    <p>113437544521</p>
-                </div>
-                <div class="contact-card">
-                    <div class="c-icon">💬</div>
-                    <h4>微信咨询</h4>
-                    <p>13437544521</p>
-                </div>
-                <div class="contact-card">
-                    <div class="c-icon">📍</div>
-                    <h4>总部地址</h4>
-                    <p>陆丰市东海街道环城路98号</p>
-                </div>
-                <div class="contact-card">
-                    <div class="c-icon">🕘</div>
-                    <h4>咨询时间</h4>
-                    <p>每天 9:00 - 21:00</p>
-                </div>
-            </div>
-        </div>
+    <!-- ================= 七、其它协议 ================= -->
+    <section id="others">
+      <h2>七、其它协议 <span class="tag comm">COMM</span></h2>
+
+      <h3 id="onewire">7.1 1-Wire 单总线</h3>
+      <p>1-Wire 只用<b>一根数据线</b>（加地线）完成供电与通信，总线默认被上拉。每个器件有唯一 64 位 ROM 地址，主机先发「寻址命令」匹配目标器件再通信。典型器件：<b>DS18B20 温度传感器</b>。</p>
+      <ul>
+        <li><b>位时序</b>：靠主机拉低总线的持续时间区分写 0 / 写 1 / 读位</li>
+        <li><b>时序要求严格</b>：微妙级延时，需关中断或精确延时，否则读取失败</li>
+        <li><b>寄生供电</b>：数据线高电平时给内部电容充电，可省一根电源线</li>
+      </ul>
+
+      <h3 id="rs485">7.2 RS485 / RS422</h3>
+      <p>RS485 用<b>差分信号</b>（A/B 两线）抗共模干扰，支持<b>多节点</b>（可达上百个）、长距离（千米级）。通常配合 <b>Modbus RTU</b> 协议用于工业组网。</p>
+      <div class="kv">
+        <span class="kk">RS485</span><span>2 线半双工，差分，多节点，需方向控制（收/发切换）</span>
+        <span class="kk">RS422</span><span>4 线全双工（两对差分），一主多从</span>
+        <span class="kk">电平</span><span>差分电压差 &gt; 200mV 判 1 / &lt; −200mV 判 0，抗噪强</span>
+        <span class="kk">转接</span><span>TTL ↔ RS485 需 MAX485 等收发器芯片</span>
+      </div>
+
+      <h3 id="usb">7.3 USB 简介</h3>
+      <p>USB（Universal Serial Bus）是主从式、分层协议的差分串行总线，速率分低速 1.5M / 全速 12M / 高速 480M / 超速 5G 等。STM32 自带 USB 外设可实现 <b>虚拟串口(CDC)</b>、<b>HID</b>（键盘鼠标）等设备，但协议栈复杂，通常用现成库（如 STM32Cube 的 USB 中间件）。</p>
+      <div class="note"><b>与 UART 区别</b>USB 是<b>同步、差分、主从严格</b>的总线，且带供电（VBUS 5V）；UART 是简单的点对点异步串口。学习顺序建议：先精通 UART/SPI/I2C，再碰 USB。</div>
     </section>
 
-    <!-- Footer -->
-    <footer>
-        <div class="container">
-            <p>&copy; 2026 东莞围炒卷粿店 — 骑手招聘官网 | <a href="#">回到顶部</a></p>
-            <p style="margin-top:4px;">用心做好每一份卷粿，诚邀每一位伙伴加入 🤝</p>
-        </div>
-    </footer>
+    <!-- ================= 八、定时器与 PWM ================= -->
+    <section id="timer">
+      <h2>八、定时器与 PWM <span class="tag timer">TIM</span></h2>
 
-    <script>
-        // Mobile menu
-        const hamburger = document.getElementById('hamburger');
-        const mobileMenu = document.getElementById('mobileMenu');
-        const closeMenuBtn = document.getElementById('closeMenu');
+      <h3 id="timer-basic">8.1 定时基础</h3>
+      <p>定时器核心是<b>计数寄存器 CNT</b>，在时钟驱动下计数。关键参数：<b>预分频器 PSC</b>（分频）和<b>自动重装载寄存器 ARR</b>（计数上限）。</p>
+      <div class="code"><button class="copy">复制</button><span class="lang">公式</span>
+计数频率 = 定时器时钟 / (PSC + 1)
+定时时间 = (ARR + 1) × (PSC + 1) / 定时器时钟
 
-        hamburger.addEventListener('click', () => mobileMenu.classList.add('open'));
-        function closeMenu() { mobileMenu.classList.remove('open'); }
-        closeMenuBtn.addEventListener('click', closeMenu);
+例：定时器时钟 84MHz，PSC=8399，ARR=9999
+  计数频率 = 84M / 8400 = 10 kHz，定时 1 秒</div>
+      <div class="kv">
+        <span class="kk">向上计数</span><span>CNT 从 0 加到 ARR，溢出触发更新事件（最常用）</span>
+        <span class="kk">向下计数</span><span>CNT 从 ARR 减到 0</span>
+        <span class="kk">中央对齐</span><span>先增后减，用于无刷电机等对称波形</span>
+      </div>
 
-        // Smooth scroll for mobile menu links
-        document.querySelectorAll('.mobile-menu a').forEach(link => {
-            link.addEventListener('click', closeMenu);
-        });
+      <h3 id="timer-pwm">8.2 PWM 输出</h3>
+      <p>PWM（Pulse Width Modulation）通过改变<b>占空比</b>控制平均电压/功率，用于 LED 调光、舵机、电机调速。核心是<b>捕获/比较寄存器 CCR</b>：CNT 与 CCR 比较时翻转输出。</p>
+      <div class="fig">
+        <svg viewBox="0 0 720 150" font-family="sans-serif">
+          <line x1="20" y1="30" x2="700" y2="30" stroke="#ccc" stroke-width="1"/>
+          <line x1="20" y1="110" x2="700" y2="110" stroke="#ccc" stroke-width="1"/>
+          <text x="700" y="24" font-size="12" fill="#888" text-anchor="end">ARR</text>
+          <text x="700" y="130" font-size="12" fill="#888" text-anchor="end">0</text>
+          <path d="M20 110 L110 30 L200 110 L290 30 L380 110 L470 30 L560 110 L650 30" stroke="#999" fill="none" stroke-width="1.5"/>
+          <path d="M20 110 L65 110 L65 60 L155 60 L155 110 L245 110 L245 60 L335 60 L335 110 L425 110 L425 60 L515 60 L515 110 L605 110 L605 60 L650 60" stroke="#0b6bcb" fill="none" stroke-width="2.5"/>
+          <text x="155" y="85" font-size="12" fill="#0f766e" text-anchor="middle">CCR</text>
+          <text x="110" y="145" font-size="12" fill="#0b6bcb" text-anchor="middle">高电平=CCR</text>
+          <text x="200" y="145" font-size="12" fill="#0b6bcb" text-anchor="middle">周期=ARR+1</text>
+        </svg>
+        <div class="cap">PWM 原理：CNT 从 0 计数到 ARR，小于 CCR 输出高、大于 CCR 输出低</div>
+      </div>
+      <div class="code"><button class="copy">复制</button><span class="lang">公式</span>
+PWM 频率 = 定时器时钟 / ((PSC + 1) × (ARR + 1))
+占空比   = CCR / (ARR + 1) × 100%
 
-        // Navbar shadow on scroll
-        window.addEventListener('scroll', () => {
-            const nav = document.getElementById('navbar');
-            nav.style.boxShadow = window.scrollY > 10
-                ? '0 2px 20px rgba(0,0,0,0.08)'
-                : 'none';
-        });
+例：84MHz，PSC=83，ARR=999 → PWM 频率 1 kHz；CCR=500 → 占空比 50%</div>
 
-        // Form submission
-        const form = document.getElementById('applyForm');
-        const toast = document.getElementById('toast');
+      <h3 id="timer-ic">8.3 输入捕获（Input Capture）</h3>
+      <p>输入捕获在检测到引脚<b>边沿</b>（上升/下降）时，把当前 CNT 值锁存到 CCR。连续两次捕获的差值即为信号的<b>周期/脉宽</b>，用于测量频率、占空比、脉宽。</p>
 
-        form.addEventListener('submit', function(e) {
-            e.preventDefault();
+      <h3 id="timer-oc">8.4 输出比较（Output Compare）</h3>
+      <p>输出比较是 CNT 与 CCR 匹配时产生事件（翻转/置位/触发中断），PWM 本质上是输出比较的一种特例（匹配时翻转电平）。</p>
 
-            const name = document.getElementById('name').value.trim();
-            const phone = document.getElementById('phone').value.trim();
-            const jobType = document.getElementById('jobType').value;
+      <h3 id="timer-encoder">8.5 编码器模式（Encoder）</h3>
+      <p>编码器模式用<b>两个通道的相位差</b>（A 相、B 相正交信号）判断旋转<b>方向</b>并计数，常用于电机测速/测角。A/B 相位领先关系决定正反转，硬件自动增减 CNT。</p>
 
-            if (!name || !phone || !jobType) {
-                alert('请填写必填项（姓名、手机号、应聘岗位）');
-                return;
-            }
+      <h3 id="timer-hal">8.6 HAL 库示例</h3>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+<span class="c-cmt">// TIM3 通道 1 输出 PWM（1kHz）</span>
+TIM_HandleTypeDef htim3;
+TIM_OC_InitTypeDef sConfigOC = {<span class="c-num">0</span>};
+htim3.Instance               = TIM3;
+htim3.Init.Prescaler         = <span class="c-num">83</span>;        <span class="c-cmt">// PSC</span>
+htim3.Init.CounterMode       = TIM_COUNTERMODE_UP;
+htim3.Init.Period            = <span class="c-num">999</span>;       <span class="c-cmt">// ARR → 1kHz</span>
+htim3.Init.ClockDivision     = TIM_CLOCKDIVISION_DIV1;
+HAL_TIM_PWM_Init(&amp;htim3);
 
-            if (!/^1[3-9]\d{9}$/.test(phone)) {
-                alert('请输入正确的手机号码');
-                return;
-            }
+sConfigOC.OCMode     = TIM_OCMODE_PWM1;
+sConfigOC.Pulse      = <span class="c-num">500</span>;            <span class="c-cmt">// CCR → 50%</span>
+sConfigOC.OCPolarity = TIM_OCPOLARITY_HIGH;
+HAL_TIM_PWM_ConfigChannel(&amp;htim3, &amp;sConfigOC, TIM_CHANNEL_1);
+HAL_TIM_PWM_Start(&amp;htim3, TIM_CHANNEL_1);
 
-            // Show toast
-            toast.classList.add('show');
-            setTimeout(() => toast.classList.remove('show'), 3500);
+<span class="c-cmt">// 运行时改占空比</span>
+__HAL_TIM_SET_COMPARE(&amp;htim3, TIM_CHANNEL_1, <span class="c-num">250</span>); <span class="c-cmt">// 25%</span>
 
-            // Reset form
-            form.reset();
+<span class="c-cmt">// 定时器中断（1ms 节拍）</span>
+HAL_TIM_Base_Start_IT(&amp;htim3);
+<span class="c-kw">void</span> HAL_TIM_PeriodElapsedCallback(TIM_HandleTypeDef *h){
+  <span class="c-kw">if</span>(h-&gt;Instance == TIM3){ <span class="c-cmt">/* 每 1ms 执行一次 */</span> }
+}</div>
+    </section>
 
-            // Log (in production, send to server)
-            console.log('申请提交:', { name, phone, jobType });
-        });
+    <!-- ================= 九、ADC/DAC ================= -->
+    <section id="adc">
+      <h2>九、ADC / DAC <span class="tag adc">ADC</span></h2>
 
-        // Smooth scroll for all anchor links
-        document.querySelectorAll('a[href^="#"]').forEach(anchor => {
-            anchor.addEventListener('click', function(e) {
-                e.preventDefault();
-                const target = document.querySelector(this.getAttribute('href'));
-                if (target) {
-                    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
-                }
-            });
-        });
-    </script>
+      <h3 id="adc-basic">9.1 ADC 基础</h3>
+      <p>ADC（Analog-to-Digital Converter）把模拟电压转为数字量。STM32 常见 <b>12 位 ADC</b>，分辨率 2<sup>12</sup>=4096。</p>
+      <div class="code"><button class="copy">复制</button><span class="lang">公式</span>
+数字量 = 输入电压 / 参考电压 × (2^N - 1)
+输入电压 = 数字量 × 参考电压 / (2^N - 1)
+
+例：12 位 ADC，参考 3.3V，读得 2048 → 电压 ≈ 1.65V</div>
+      <div class="kv">
+        <span class="kk">分辨率</span><span>12 位（可配 10/8/6 位），位数越高越精细</span>
+        <span class="kk">参考电压</span><span>通常为 VREF+，常见 3.3V，决定满量程</span>
+        <span class="kk">采样时间</span><span>需匹配信号源阻抗；采样越久越稳，转换越慢</span>
+      </div>
+
+      <h3 id="adc-mode">9.2 转换模式</h3>
+      <div class="kv">
+        <span class="kk">单次</span><span>触发一次转换一次</span>
+        <span class="kk">连续</span><span>转换完自动开始下一次</span>
+        <span class="kk">扫描</span><span>多通道依次转换（配合 DMA 搬运结果）</span>
+        <span class="kk">注入/规则</span><span>规则组常规采样；注入组可插入优先转换（较少用）</span>
+      </div>
+
+      <h3 id="adc-dma">9.3 ADC + DMA 连续采样</h3>
+      <p>多通道扫描 + 连续模式 + DMA 循环搬运，是 ADC 采样的标准做法：DMA 把各通道结果自动写入数组，CPU 无需干预，只需读数组即可。</p>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+<span class="c-cmt">// ADC1 单次转换（PA0）</span>
+HAL_ADC_Start(&amp;hadc1);
+<span class="c-kw">if</span>(HAL_ADC_PollForConversion(&amp;hadc1, <span class="c-num">1000</span>) == HAL_OK){
+  uint32_t val = HAL_ADC_GetValue(&amp;hadc1);   <span class="c-cmt">// 0~4095</span>
+  <span class="c-kw">float</span> volt = val * <span class="c-num">3.3f</span> / <span class="c-num">4095</span>;
+}
+HAL_ADC_Stop(&amp;hadc1);
+
+<span class="c-cmt">// 连续 + DMA 循环采样（多通道结果写入数组）</span>
+uint32_t adc_buf[<span class="c-num">2</span>];  <span class="c-cmt">// 2 个通道</span>
+HAL_ADC_Start_DMA(&amp;hadc1, adc_buf, <span class="c-num">2</span>);</div>
+      <div class="note"><b>注意</b>ADC 引脚须配<b>模拟输入</b>；可用多次采样取平均 + 软件滤波降噪；参考电压不稳会直接影响精度。</div>
+
+      <h3 id="dac">9.4 DAC</h3>
+      <p>DAC（Digital-to-Analog Converter）把数字量转为模拟电压输出，可用于产生任意波形、模拟信号。STM32 DAC 通常 12 位。</p>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+HAL_DAC_Start(&amp;hdac, DAC_CHANNEL_1);
+HAL_DAC_SetValue(&amp;hdac, DAC_CHANNEL_1, DAC_ALIGN_12B_R, <span class="c-num">2048</span>); <span class="c-cmt">// 输出约 1/2 VREF</span></div>
+    </section>
+
+    <!-- ================= 十、中断与 DMA ================= -->
+    <section id="dma">
+      <h2>十、中断与 DMA <span class="tag dma">DMA</span></h2>
+
+      <h3 id="irq-nvic">10.1 中断与 NVIC 优先级</h3>
+      <p>中断让 CPU 无需轮询，事件发生时<b>硬件自动跳转到中断服务函数 ISR</b>。STM32 由 <b>NVIC</b>（嵌套向量中断控制器）管理。</p>
+      <div class="kv">
+        <span class="kk">抢占优先级</span><span>高抢占级可打断低抢占级的中断，数值越小优先级越高</span>
+        <span class="kk">子优先级</span><span>抢占级相同时，决定同时挂起的中断谁先执行</span>
+        <span class="kk">中断分组</span><span>优先级位数在抢占/子优先级间分配（NVIC_PriorityGroup）</span>
+      </div>
+      <div class="warn"><b>中断服务函数原则</b>尽量<b>短</b>、尽快返回；避免在 ISR 里做耗时操作或调用会阻塞的函数；相关标志位需及时清除。</div>
+
+      <h3 id="irq-exti">10.2 外部中断 EXTI</h3>
+      <p>EXTI 检测引脚<b>边沿</b>（上升沿/下降沿/双边沿），触发外部中断，常用于按键、传感器信号触发。</p>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+<span class="c-cmt">// EXTI：PC13 下降沿触发（按键按下）</span>
+<span class="c-kw">void</span> HAL_GPIO_EXTI_Callback(uint16_t GPIO_Pin){
+  <span class="c-kw">if</span>(GPIO_Pin == GPIO_PIN_13){
+    HAL_GPIO_TogglePin(GPIOA, GPIO_PIN_5);  <span class="c-cmt">// 翻转 LED</span>
+  }
+}
+<span class="c-cmt">// 需：配置引脚为中断输入、使能 SYSCFG、配置 NVIC 使能 EXTI13</span></div>
+
+      <h3 id="dma-detail">10.3 DMA 详解</h3>
+      <p>DMA（Direct Memory Access）让<b>外设与内存之间</b>直接搬数据，不经过 CPU，大幅降低 CPU 负担，适合 ADC 连续采样、UART 收发大量数据。</p>
+      <div class="kv">
+        <span class="kk">传输方向</span><span>内存→外设 / 外设→内存 / 内存→内存</span>
+        <span class="kk">传输模式</span><span>单次（传完停止）/ 循环（自动重来，连续采样用）</span>
+        <span class="kk">数据宽度</span><span>字节 / 半字 / 字</span>
+        <span class="kk">流与通道</span><span>STM32 每个 DMA 控制器有多个流(Stream)与通道(Channel)，外设映射到固定通道</span>
+        <span class="kk">典型应用</span><span>ADC 多通道循环搬运、UART+DMA 收发、SPI/DAC 波形生成</span>
+      </div>
+      <div class="tip"><b>中断 vs DMA</b>中断仍需 CPU 执行 ISR 搬数据；DMA 完全由硬件搬运，CPU 只处理完成后的结果。数据量大、速率高时优先 DMA。</div>
+    </section>
+
+    <!-- ================= 十一、时钟系统 ================= -->
+    <section id="rcc">
+      <h2>十一、时钟系统 RCC <span class="tag sys">SYS</span></h2>
+      <p>时钟是嵌入式系统的「心跳」，所有外设工作都依赖时钟。RCC（Reset and Clock Control）负责复位与时钟配置。<b>外设使用前必须先使能其时钟</b>，否则无法工作。</p>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>时钟源</th><th>频率</th><th>说明</th></tr></thead>
+        <tbody>
+          <tr><td class="k">HSI</td><td>16 MHz</td><td>内部高速 RC，上电默认，精度一般</td></tr>
+          <tr><td class="k">HSE</td><td>4~26 MHz</td><td>外部高速晶振，精度高，经 PLL 倍频</td></tr>
+          <tr><td class="k">PLL</td><td>可倍频到主频</td><td>把 HSI/HSE 倍频得到系统时钟 SYSCLK</td></tr>
+          <tr><td class="k">LSI</td><td>32 kHz</td><td>内部低速 RC，驱动看门狗</td></tr>
+          <tr><td class="k">LSE</td><td>32.768 kHz</td><td>外部低速晶振，驱动 RTC 实时时钟</td></tr>
+        </tbody>
+      </table>
+      </div>
+      <div class="kv">
+        <span class="kk">SYSCLK</span><span>系统时钟，经 AHB 分频器分给总线（HCLK）</span>
+        <span class="kk">APB1 / APB2</span><span>外设总线，APB1 挂低速外设（UART2/3、I2C、SPI2），APB2 挂高速外设（UART1、SPI1、ADC）</span>
+        <span class="kk">定时器时钟</span><span>APB 分频为 1 时等于 APB；分频 &gt;1 时为 APB×2（如 F4 的 APB1×2=84MHz）</span>
+      </div>
+      <div class="warn"><b>最常见错误</b>忘了 <code>__HAL_RCC_xxx_CLK_ENABLE()</code> 使能外设时钟，导致外设不工作、寄存器写不进。配置任何外设前先使能其时钟。</div>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+<span class="c-cmt">// 使能各外设时钟（使用前必须）</span>
+__HAL_RCC_GPIOA_CLK_ENABLE();   <span class="c-cmt">// GPIOA</span>
+__HAL_RCC_USART1_CLK_ENABLE();  <span class="c-cmt">// 串口 1</span>
+__HAL_RCC_SPI1_CLK_ENABLE();    <span class="c-cmt">// SPI1</span>
+__HAL_RCC_I2C1_CLK_ENABLE();    <span class="c-cmt">// I2C1</span>
+__HAL_RCC_TIM3_CLK_ENABLE();    <span class="c-cmt">// 定时器 3</span>
+__HAL_RCC_ADC1_CLK_ENABLE();    <span class="c-cmt">// ADC1</span></div>
+    </section>
+
+    <!-- ================= 十二、看门狗 ================= -->
+    <section id="wdg">
+      <h2>十二、看门狗 <span class="tag sys">SYS</span></h2>
+      <p>看门狗（Watchdog）是防止程序跑飞/死机的保护机制：程序需在定时器超时前「喂狗」，否则看门狗复位系统，使程序从异常中恢复。</p>
+
+      <h3 id="iwdg">12.1 独立看门狗 IWDG</h3>
+      <div class="kv">
+        <span class="kk">时钟</span><span>独立使用内部 LSI（约 32kHz），不受主时钟影响</span>
+        <span class="kk">作用</span><span>主程序死循环/卡死时复位系统</span>
+        <span class="kk">喂狗</span><span>在超时前调用 <code>HAL_IWDG_Refresh()</code> 重装计数器</span>
+      </div>
+      <div class="code"><button class="copy">复制</button><span class="lang">C · HAL</span>
+hiwdg.Instance       = IWDG;
+hiwdg.Init.Prescaler = IWDG_PRESCALER_64;   <span class="c-cmt">// 分频</span>
+hiwdg.Init.Reload    = <span class="c-num">4095</span>;             <span class="c-cmt">// 重装载值 → 超时约 8s</span>
+HAL_IWDG_Init(&amp;hiwdg);
+<span class="c-cmt">// 主循环里周期性喂狗</span>
+HAL_IWDG_Refresh(&amp;hiwdg);</div>
+
+      <h3 id="wwdg">12.2 窗口看门狗 WWDG</h3>
+      <p>窗口看门狗更严格：必须在<b>窗口区间内</b>喂狗，太早或太晚都复位。用于检测程序是否按预期时序运行（而非简单死机）。时钟来自 PCLK 分频。</p>
+      <div class="note"><b>选择</b>只防死机用 IWDG 即可；需检查程序时序是否异常时用 WWDG。</div>
+    </section>
+
+    <!-- ================= 十三、速查表 ================= -->
+    <section id="cheatsheet">
+      <h2>十三、速查表 <span class="tag timer">TIPS</span></h2>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>问题</th><th>要点 / 答案</th></tr></thead>
+        <tbody>
+          <tr><td>STM32 GPIO 有几种模式？</td><td>8 种：浮空/上拉/下拉/模拟输入 + 推挽/开漏/复用推挽/复用开漏输出</td></tr>
+          <tr><td>I2C 为什么需要上拉？</td><td>SCL/SDA 是开漏输出只能拉低，靠外部上拉到高，且支持多器件线与</td></tr>
+          <tr><td>SPI 和 I2C 怎么选？</td><td>SPI 快但引脚多、无寻址；I2C 省线、可多器件但速度低</td></tr>
+          <tr><td>UART 收不到数据？</td><td>查：波特率、TX/RX 交叉、共地、时钟与中断使能</td></tr>
+          <tr><td>PWM 频率怎么算？</td><td>f = 定时器时钟 / ((PSC+1)×(ARR+1))；占空比 = CCR/(ARR+1)</td></tr>
+          <tr><td>ADC 电压怎么换算？</td><td>V = 读数 × VREF / (2^N − 1)</td></tr>
+          <tr><td>CAN 终端电阻？</td><td>总线两端各 120Ω</td></tr>
+          <tr><td>外设不工作？</td><td>先查是否漏了 <code>__HAL_RCC_xxx_CLK_ENABLE()</code> 使能时钟</td></tr>
+          <tr><td>开漏能直接点 LED 吗？</td><td>可以，LED 一端接 VCC、另一端接引脚，低电平点亮（注意电流方向与限流）</td></tr>
+          <tr><td>程序死机怎么恢复？</td><td>加独立看门狗 IWDG，主循环里周期性喂狗</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+
+    <!-- ================= 十四、术语表 ================= -->
+    <section id="glossary">
+      <h2>十四、术语表 <span class="tag sys">GLOSS</span></h2>
+      <div class="tbl-wrap">
+      <table>
+        <thead><tr><th>术语</th><th>含义</th></tr></thead>
+        <tbody>
+          <tr><td class="k">GPIO</td><td>通用输入输出引脚</td></tr>
+          <tr><td class="k">上拉/下拉</td><td>用电阻把引脚默认拉到高/低电平</td></tr>
+          <tr><td class="k">推挽/开漏</td><td>两种输出结构：能主动输出高/低 vs 只能拉低需外部上拉</td></tr>
+          <tr><td class="k">波特率</td><td>每秒传输的位(bit)数</td></tr>
+          <tr><td class="k">全双工/半双工</td><td>能否同时收发</td></tr>
+          <tr><td class="k">主/从</td><td>提供时钟与发起通信的是主机，其余为从机</td></tr>
+          <tr><td class="k">ACK/NACK</td><td>应答/非应答，I2C 中的确认位</td></tr>
+          <tr><td class="k">占空比</td><td>PWM 高电平时间占周期的比例</td></tr>
+          <tr><td class="k">中断</td><td>事件发生时硬件打断主程序去处理</td></tr>
+          <tr><td class="k">DMA</td><td>直接内存访问，外设与内存间硬件搬运数据</td></tr>
+          <tr><td class="k">RCC</td><td>复位与时钟控制单元</td></tr>
+          <tr><td class="k">看门狗</td><td>超时未喂狗则复位的保护机制</td></tr>
+          <tr><td class="k">LSB / MSB</td><td>最低有效位 / 最高有效位（数据传输顺序）</td></tr>
+        </tbody>
+      </table>
+      </div>
+    </section>
+  </main>
+</div>
+
+<button class="backtop" id="backTop" title="回到顶部">↑</button>
+
+<script>
+  const themeBtn = document.getElementById('themeBtn');
+  const saved = localStorage.getItem('emb-theme');
+  if(saved){ document.documentElement.setAttribute('data-theme', saved); themeBtn.textContent = saved==='dark'?'☀️':'🌙'; }
+  themeBtn.addEventListener('click', ()=>{
+    const cur = document.documentElement.getAttribute('data-theme')==='dark' ? 'light' : 'dark';
+    document.documentElement.setAttribute('data-theme', cur);
+    localStorage.setItem('emb-theme', cur);
+    themeBtn.textContent = cur==='dark'?'☀️':'🌙';
+  });
+
+  const menuBtn = document.getElementById('menuBtn');
+  const nav = document.getElementById('nav');
+  menuBtn.addEventListener('click', ()=> nav.classList.toggle('open'));
+  nav.querySelectorAll('a').forEach(a=> a.addEventListener('click', ()=> nav.classList.remove('open')));
+
+  document.querySelectorAll('.code .copy').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const code = btn.closest('.code');
+      const lang = code.querySelector('.lang');
+      const text = code.innerText.replace(/复制.*?/,'').replace(/C · HAL|C · 寄存器|公式/,'').trim();
+      navigator.clipboard.writeText(text).then(()=>{
+        btn.textContent='已复制'; setTimeout(()=> btn.textContent='复制', 1500);
+      });
+    });
+  });
+
+  const search = document.getElementById('search');
+  search.addEventListener('input', ()=>{
+    const q = search.value.trim().toLowerCase();
+    document.querySelectorAll('mark').forEach(m=>{ const p=m.parentNode; p.replaceChild(document.createTextNode(m.textContent), m); });
+    document.querySelectorAll('main section').forEach(sec=>{
+      if(!q){ sec.classList.remove('hidden'); return; }
+      const text = sec.innerText.toLowerCase();
+      if(text.includes(q)){ sec.classList.remove('hidden'); highlight(sec, q); }
+      else { sec.classList.add('hidden'); }
+    });
+  });
+  function highlight(el, q){
+    const walker = document.createTreeWalker(el, NodeFilter.SHOW_TEXT, {
+      acceptNode(n){
+        if(n.parentNode && (n.parentNode.tagName==='SCRIPT'||n.parentNode.tagName==='STYLE'||n.parentNode.classList.contains('copy')||n.parentNode.classList.contains('lang'))) return NodeFilter.FILTER_REJECT;
+        return n.nodeValue && n.nodeValue.toLowerCase().includes(q) ? NodeFilter.FILTER_ACCEPT : NodeFilter.FILTER_REJECT;
+      }
+    });
+    const nodes=[]; while(walker.nextNode()) nodes.push(walker.currentNode);
+    nodes.forEach(n=>{
+      const frag = document.createDocumentFragment();
+      const txt = n.nodeValue; const lower = txt.toLowerCase();
+      let i=0, idx;
+      while((idx = lower.indexOf(q, i)) !== -1){
+        frag.appendChild(document.createTextNode(txt.slice(i, idx)));
+        const m = document.createElement('mark');
+        m.textContent = txt.slice(idx, idx+q.length);
+        frag.appendChild(m);
+        i = idx + q.length;
+      }
+      frag.appendChild(document.createTextNode(txt.slice(i)));
+      n.parentNode.replaceChild(frag, n);
+    });
+  }
+
+  const backTop = document.getElementById('backTop');
+  backTop.addEventListener('click', ()=> window.scrollTo({top:0, behavior:'smooth'}));
+  window.addEventListener('scroll', ()=>{
+    backTop.style.display = window.scrollY > 400 ? 'block' : 'none';
+    let cur = null;
+    document.querySelectorAll('main section').forEach(sec=>{
+      if(sec.getBoundingClientRect().top <= 100) cur = sec.id;
+    });
+    document.querySelectorAll('nav a').forEach(a=>{
+      a.classList.toggle('active', a.getAttribute('href') === '#'+cur);
+    });
+  });
+  backTop.style.display='none';
+</script>
 </body>
 </html>
